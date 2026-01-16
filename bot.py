@@ -1,3 +1,4 @@
+import os
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
@@ -9,8 +10,9 @@ from telegram.ext import (
 
 from evaluator import evaluate_hardware
 
-TOKEN = "8382961782:AAFMJ3A6Dydgjqf0figNaEHkcVX927PgMos"
+TOKEN = os.environ.get("TELEGRAM_TOKEN")
 
+app = ApplicationBuilder().token(TOKEN).build()
 
 # =========================
 # MENU TEKSTY
