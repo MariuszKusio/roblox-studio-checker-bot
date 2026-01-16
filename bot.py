@@ -6,13 +6,10 @@ from telegram.ext import (
     MessageHandler,
     ContextTypes,
     filters,
+    Application,
 )
 
 from evaluator import evaluate_hardware
-
-TOKEN = os.environ.get("TELEGRAM_TOKEN")
-
-app = ApplicationBuilder().token(TOKEN).build()
 
 # =========================
 # MENU TEKSTY
@@ -167,21 +164,19 @@ app = ApplicationBuilder().token(TOKEN).build()
 app.add_handler(CommandHandler("start", start))
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-print("🤖 Bot uruchomiony...")
 # app.run_polling()
-
-import os
-from telegram.ext import Application
+print("🤖 Bot uruchomiony...")
 
 PORT = int(os.environ.get("PORT", 8080))
 WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
+TOKEN = os.environ.get("TELEGRAM_TOKEN")
+
+application = ApplicationBuilder().token(TOKEN).build()
 
 if __name__ == "__main__":
-    application = app
-
     application.run_webhook(
         listen="0.0.0.0",
         port=PORT,
-        url_path="/webhook",
-        webhook_url=f"{WEBHOOK_URL}/webhook"
+        url_path="webhook",
+        webhook_url=f"{WEBHOOK_URL}/webhook",
     )
