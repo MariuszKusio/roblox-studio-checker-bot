@@ -45,8 +45,67 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    result = evaluate_hardware(update.message.text)
-    await update.message.reply_text(result)
+    text = update.message.text.strip()
+
+    # =========================
+    # MENU GŁÓWNE (NAJPIERW!)
+    # =========================
+
+    if text == "1":
+        context.user_data["mode"] = "check_hardware"
+        await update.message.reply_text(CHECK_PROMPT, parse_mode="Markdown")
+        return
+
+    if text == "2":
+        context.user_data["mode"] = "choose_os"
+        await update.message.reply_text(OS_MENU, parse_mode="Markdown")
+        return
+
+    if text == "3":
+        await update.message.reply_text(SPECIFIC_INFO, parse_mode="Markdown")
+        await update.message.reply_text(MAIN_MENU, parse_mode="Markdown")
+        return
+
+    # =========================
+    # TRYBY (DOPIERO TERAZ)
+    # =========================
+
+    mode = context.user_data.get("mode")
+
+    if mode == "check_hardware":
+        result = evaluate_hardware(text)
+        context.user_data.clear()
+        await update.message.reply_text(result)
+        await update.message.reply_text(MAIN_MENU, parse_mode="Markdown")
+        return
+
+    if mode == "choose_os":
+        if text == "1":
+            await update.message.reply_text(
+                "🪟 *Windows*\n\nRoblox Studio działa na Windows 10 i 11.",
+                parse_mode="Markdown",
+            )
+        elif text == "2":
+            await update.message.reply_text(
+                "🍎 *macOS*\n\nRoblox Studio działa na macOS (Intel / Apple Silicon).",
+                parse_mode="Markdown",
+            )
+        else:
+            await update.message.reply_text("❌ Wybierz 1 lub 2.")
+            return
+
+        context.user_data.clear()
+        await update.message.reply_text(MAIN_MENU, parse_mode="Markdown")
+        return
+
+    # =========================
+    # NIEZNANE
+    # =========================
+
+    await update.message.reply_text(
+        "❓ Nie rozumiem.\nWpisz /menu, aby zobaczyć opcje.",
+        parse_mode="Markdown",
+    )
 
 
 application.add_handler(CommandHandler("start", start))
