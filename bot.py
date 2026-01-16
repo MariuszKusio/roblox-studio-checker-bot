@@ -166,4 +166,20 @@ app.add_handler(CommandHandler("start", start))
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
 print("🤖 Bot uruchomiony...")
-app.run_polling()
+# app.run_polling()
+
+import os
+from telegram.ext import Application
+
+PORT = int(os.environ.get("PORT", 8080))
+WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
+
+if __name__ == "__main__":
+    application = app
+
+    application.run_webhook(
+        listen="0.0.0.0",
+        port=PORT,
+        url_path="/webhook",
+        webhook_url=f"{WEBHOOK_URL}/webhook"
+    )
