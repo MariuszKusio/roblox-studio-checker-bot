@@ -1,185 +1,140 @@
-from telegram import Update
-from telegram.ext import (
-    ApplicationBuilder,
-    CommandHandler,
-    MessageHandler,
-    ContextTypes,
-    filters,
-)
+import re
 
-from evaluator import evaluate_hardware
+# ==================================================
+# RAM
+# ==================================================
 
-TOKEN = "8382961782:AAFMJ3A6Dydgjqf0figNaEHkcVX927PgMos"
-
-
-# =========================
-# MENU TEKSTY
-# =========================
-
-MAIN_MENU = (
-    "📋 *Menu główne*\n\n"
-    "Wpisz numer wybranej pozycji:\n\n"
-    "1️⃣ Sprawdź specyfikację komputera pod Roblox Studio\n"
-    "2️⃣ Jak dokładnie sprawdzić wymagania?\n"
-    "3️⃣ Specyficzne przypadki (macOS, ChromeOS)"
-)
-
-HELP_TEXT = (
-    "🤖 *Pomoc*\n\n"
-    "Dostępne komendy:\n"
-    "• /start – uruchom bota\n"
-    "• /menu – pokaż menu główne\n\n"
-    "Jak korzystać:\n"
-    "1️⃣ Wpisz /menu\n"
-    "2️⃣ Wybierz numer opcji\n"
-    "3️⃣ Postępuj zgodnie z instrukcjami\n"
-)
-
-CHECK_PROMPT = (
-    "🖥️ *Sprawdzanie sprzętu*\n\n"
-    "Wprowadź dokładny model procesora oraz ilość pamięci RAM.\n"
-    "Przykład:\n"
-    "`i5-10400F, 8GB RAM`"
-)
-
-OS_MENU = (
-    "💻 *Wybierz system operacyjny:*\n\n"
-    "1️⃣ Windows\n"
-    "2️⃣ macOS"
-)
-
-SPECIFIC_INFO = (
-    "ℹ️ *Specyficzne przypadki:*\n\n"
-    "• Tablety nie mogą być wykorzystywane do pracy w Roblox Studio\n"
-    "• Komputery z ChromeOS nie obsługują Roblox Studio\n"
-    "• Roblox Studio wymaga klasycznego systemu desktopowego\n"
-)
+def extract_ram(text: str):
+    """
+    Wyciąga ilość RAM z tekstu, np.:
+    "8GB RAM", "16 gb", "mam 32GB"
+    Zwraca int lub None
+    """
+    match = re.search(r"(\d+)\s?gb", text.lower())
+    return int(match.group(1)) if match else None
 
 
-# =========================
-# START
-# =========================
-
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data.clear()
-    await update.message.reply_text(
-        MAIN_MENU,
-        parse_mode="Markdown"
-    )
-
-async def menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data.clear()
-    await update.message.reply_text(
-        MAIN_MENU,
-        parse_mode="Markdown"
-    )
-
-async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(HELP_TEXT, parse_mode="Markdown") 
+def is_ram_ok(ram: int):
+    """
+    Minimalny warunek dla Roblox Studio:
+    RAM >= 8 GB
+    """
+    return ram is not None and ram >= 8
 
 
-# =========================
-# GŁÓWNY HANDLER
-# =========================
+# ==================================================
+# INTEL CPU ANALYSIS
+# ==================================================
 
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text.strip()
-
-    # Sprawdź aktualny tryb użytkownika
-    mode = context.user_data.get("mode")
-
-    app.add_handler(CommandHandler("menu", menu))
-    app.add_handler(CommandHandler("help", help_command))
-
-    # -------------------------
-    # TRYB: OCENA SPRZĘTU
-    # -------------------------
-    if mode == "check_hardware":
-        result = evaluate_hardware(text)
-        context.user_data.clear()
-        await update.message.reply_text(result)
-        await update.message.reply_text(MAIN_MENU, parse_mode="Markdown")
-        return
-
-    # -------------------------
-    # TRYB: WYBÓR OS
-    # -------------------------
-    if mode == "choose_os":
-        if text == "1":
-            await update.message.reply_text(
-                "🪟 *Windows*\n\n"
-                "Roblox Studio działa poprawnie na Windows 10 i 11.\n"
-                "Zalecane są aktualne sterowniki graficzne.",
-                parse_mode="Markdown"
-            )
-        elif text == "2":
-            await update.message.reply_text(
-                "🍎 *macOS*\n\n"
-                "Roblox Studio działa tylko na komputerach Mac\n"
-                "z procesorami Intel lub Apple Silicon.\n"
-                "Starsze Maci mogą mieć ograniczoną wydajność.",
-                parse_mode="Markdown"
-            )
-        else:
-            await update.message.reply_text("❌ Wybierz 1 lub 2.")
-            return
-
-        context.user_data.clear()
-        await update.message.reply_text(MAIN_MENU, parse_mode="Markdown")
-        return
-
-    # -------------------------
-    # MENU GŁÓWNE
-    # -------------------------
-    if text == "1":
-        context.user_data["mode"] = "check_hardware"
-        await update.message.reply_text(CHECK_PROMPT, parse_mode="Markdown")
-        return
-
-    if text == "2":
-        context.user_data["mode"] = "choose_os"
-        await update.message.reply_text(OS_MENU, parse_mode="Markdown")
-        return
-
-    if text == "3":
-        await update.message.reply_text(SPECIFIC_INFO, parse_mode="Markdown")
-        await update.message.reply_text(MAIN_MENU, parse_mode="Markdown")
-        return
-
-    # -------------------------
-    # NIEZNANE
-    # -------------------------
-    await update.message.reply_text(
-         "❓ Nie rozumiem tej komendy.\n\n"
-    "Wpisz /start, aby zobaczyć dostępne opcje.",
-    parse_mode="Markdown"
-    )
+def extract_intel_generation(text: str):
+    """
+    Próbuje wyciągnąć generację Intela z modelu:
+    i5-8250U -> 8
+    i7-7500U -> 7
+    i3-10100 -> 10
+    """
+    match = re.search(r"i[3579]-([0-9]{4})", text.lower())
+    if match:
+        return int(match.group(1)[0])
+    return None
 
 
-# =========================
-# APP
-# =========================
+def intel_cpu_profile(text: str):
+    """
+    Określa profil CPU + zintegrowanej grafiki dla Intela
+    """
+    t = text.lower()
 
-app = ApplicationBuilder().token(TOKEN).build()
+    # --------------------------
+    # Słabe serie (Celeron itd.)
+    # --------------------------
+    if "celeron" in t:
+        # Wyjątek: n4xxx – bardzo słabe, ale uruchomi się
+        if any(x in t for x in ["n4020", "n4100", "n4120"]):
+            return "igpu_limited"
+        return "igpu_bad"
 
-app.add_handler(CommandHandler("start", start))
-app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    if "pentium" in t or "atom" in t:
+        return "igpu_bad"
 
-print("🤖 Bot uruchomiony...")
-# app.run_polling()
+    # --------------------------
+    # Xeon – nie zgadujemy
+    # --------------------------
+    if "xeon" in t:
+        return "unknown"
 
-import os
-from telegram.ext import Application
+    # --------------------------
+    # Intel Core i3 / i5 / i7 / i9
+    # --------------------------
+    gen = extract_intel_generation(t)
 
-PORT = int(os.environ.get("PORT", 8080))
-WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
+    # Nie udało się ustalić generacji
+    if gen is None:
+        return "unknown"
 
-if __name__ == "__main__":
-    application = app
+    # Za stare – mobilne 2 rdzenie + słabe iGPU
+    if gen < 7:
+        return "igpu_bad"
 
-    application.run_webhook(
-        listen="0.0.0.0",
-        port=PORT,
-        url_path="/webhook",
-        webhook_url=f"{WEBHOOK_URL}/webhook"
-    )
+    # 7+ generacja
+    if "i3" in t:
+        # i3 nawet nowe często są 2C/4T
+        return "igpu_limited"
+
+    if "i5" in t or "i7" in t or "i9" in t:
+        return "igpu_ok"
+
+    return "unknown"
+
+
+# ==================================================
+# AMD CPU ANALYSIS
+# ==================================================
+
+def amd_cpu_profile(text: str):
+    """
+    Określa profil CPU + zintegrowanej grafiki dla AMD
+    """
+    t = text.lower()
+
+    # Ryzen (Vega iGPU)
+    if "ryzen" in t:
+        if "ryzen 3" in t:
+            return "igpu_limited"
+        return "igpu_ok"
+
+    # Starsze APU
+    if any(x in t for x in ["a4-", "a6-", "a8-", "a10-"]):
+        return "igpu_limited"
+
+    # FX – brak iGPU
+    if "fx-" in t:
+        return "unknown"
+
+    return "unknown"
+
+
+# ==================================================
+# MAIN ENTRY POINT
+# ==================================================
+
+def extract_cpu_profile(text: str):
+    """
+    Zwraca jeden z profili:
+    - igpu_ok
+    - igpu_limited
+    - igpu_bad
+    - unknown
+    """
+    t = text.lower()
+
+    if "intel" in t or any(x in t for x in ["i3", "i5", "i7", "i9", "celeron", "pentium", "xeon"]):
+        return intel_cpu_profile(t)
+
+    if "amd" in t or "ryzen" in t or "athlon" in t or "fx-" in t:
+        return amd_cpu_profile(t)
+
+    return "unknown"
+
+
+
