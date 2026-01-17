@@ -115,7 +115,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # =========================
 
     await update.message.reply_text(
-        "❓ Nie rozumiem.\nWpisz /menu, aby zobaczyć opcje.",
+        "❓ Nie rozumiem.\nWpisz /start, aby zobaczyć opcje.",
         parse_mode="Markdown",
     )
 
