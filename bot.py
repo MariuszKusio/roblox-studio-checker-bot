@@ -77,7 +77,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "1. Skrót kalwiszowy windows+R\n"
                 "2. Wpisz msinfo32 -> enter\n"
                 "3. Dostęp do modelu procesora\n\n"
-                "Sposób gdy mamy drugi laptop - bez uruchomienia (laptop)\n"
+                "Sposób gdy mamy drugi komputer - bez uruchomienia (laptop)\n"
                 "1. Sprawdzenie dokładnego modelu laptopa - zazwyczaj najlepka z tyłu \n"
                 "2. Wyszukaj specyfikacje konkretnego modelu w google\n",
                 parse_mode="Markdown",
