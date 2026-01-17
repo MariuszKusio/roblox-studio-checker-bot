@@ -79,8 +79,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "3. Dostęp do modelu procesora\n\n"
                 "Sposób gdy mamy drugi laptop - bez uruchomienia (laptop)\n"
                 "1. Sprawdzenie dokładnego modelu laptopa - zazwyczaj najlepka z tyłu \n"
-                "2. Wyszukaj specyfikacje konkretnego modelu w google\n"
-                ,
+                "2. Wyszukaj specyfikacje konkretnego modelu w google\n",
                 parse_mode="Markdown",
             )
 
@@ -91,9 +90,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "2. Wybierz *Ten Mac*\n"
                 "3. Sprawdź:\n"
                 "   • Chip / Procesor\n"
-                "   • Pamięć (RAM)\n\n"
-                "Przykład do wpisania:\n"
-                "`M1, 8GB RAM`",
+                "   • Pamięć (RAM)\n\n",
                 parse_mode="Markdown",
             )
         else:
