@@ -32,12 +32,12 @@ application = ApplicationBuilder().token(TOKEN).build()
 
 MAIN_MENU = (
     "📋 *Menu główne*\n\n"
-    "1️⃣ Sprawdź specyfikację komputera\n"
+    "1️⃣ Sprawdź specyfikację komputera pod RobloxStudio\n"
     "2️⃣ Jak sprawdzić wymagania?\n"
-    "3️⃣ Specyficzne przypadki"
+    "3️⃣ Specyficzne przypadki (chromeOS,tablet itd.)"
 )
 
-CHECK_PROMPT = "Podaj CPU i RAM, np. `i5-8250U, 8GB RAM`"
+CHECK_PROMPT = "Podaj CPU i RAM w formacie - `i5-8250U, 8GB RAM`"
 
 OS_MENU = (
     "💻 *Wybierz system operacyjny:*\n\n"
@@ -49,7 +49,6 @@ SPECIFIC_INFO = (
     "ℹ️ *Specyficzne przypadki:*\n\n"
     "• Tablety nie nadają się do pracy w Roblox Studio\n"
     "• Komputery z ChromeOS nie obsługują Roblox Studio\n"
-    "• Wymagany jest klasyczny system desktopowy\n"
 )
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -68,13 +67,20 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if text == "1":
             await update.message.reply_text(
                 "🪟 *Windows – jak sprawdzić specyfikację*\n\n"
-                "1. Kliknij prawym przyciskiem na *Ten komputer*\n"
-                "2. Wybierz *Właściwości*\n"
-                "3. Sprawdź:\n"
-                "   • Procesor\n"
-                "   • Zainstalowana pamięć RAM\n\n"
-                "Przykład do wpisania:\n"
-                "`i5-8250U, 8GB RAM`",
+                "Sposób dokładny\n"
+                "1. Kliknij w ikonke windowsa - zazwyczaj lewy dolny róg\n"
+                "2. Wybierz *Ustawienia - ikonka koła zębatego*\n"
+                "3. Wybierz *System*\n"
+                "4. Po lewej stronie okna zjedź na sam dół listy i wybierz - informacje\n"
+                "5. Pojawi się informacja o Procesorze i Pamięci RAM \n\n"
+                "Sposób szybki - mniej dokłady\n"
+                "1. Skrót kalwiszowy windows+R\n"
+                "2. Wpisz msinfo32 -> enter\n"
+                "3. Dostęp do modelu procesora\n\n"
+                "Sposób gdy mamy drugi laptop - bez uruchomienia (laptop)\n"
+                "1. Sprawdzenie dokładnego modelu laptopa - zazwyczaj najlepka z tyłu \n"
+                "2. Wyszukaj specyfikacje konkretnego modelu w google\n"
+                ,
                 parse_mode="Markdown",
             )
 
