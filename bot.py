@@ -39,6 +39,18 @@ MAIN_MENU = (
 
 CHECK_PROMPT = "Podaj CPU i RAM, np. `i5-8250U, 8GB RAM`"
 
+OS_MENU = (
+    "💻 *Wybierz system operacyjny:*\n\n"
+    "1️⃣ Windows\n"
+    "2️⃣ macOS"
+)
+
+SPECIFIC_INFO = (
+    "ℹ️ *Specyficzne przypadki:*\n\n"
+    "• Tablety nie nadają się do pracy w Roblox Studio\n"
+    "• Komputery z ChromeOS nie obsługują Roblox Studio\n"
+    "• Wymagany jest klasyczny system desktopowy\n"
+)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(MAIN_MENU, parse_mode="Markdown")
