@@ -34,7 +34,7 @@ MAIN_MENU = (
     "📋 *Menu główne*\n\n"
     "1️⃣ Sprawdź specyfikację komputera pod RobloxStudio\n"
     "2️⃣ Jak sprawdzić wymagania?\n"
-    "3️⃣ Specyficzne przypadki (chromeOS,tablet itd.)"
+    "3️⃣ Specyficzne przypadki (chromeOS,tablet,oldWindows itd.)"
 )
 
 CHECK_PROMPT = "Podaj CPU i RAM w formacie - `i5-8250U, 8GB RAM`"
@@ -49,6 +49,7 @@ SPECIFIC_INFO = (
     "ℹ️ *Specyficzne przypadki:*\n\n"
     "• Tablety nie nadają się do pracy w Roblox Studio\n"
     "• Komputery z ChromeOS nie obsługują Roblox Studio\n"
+    "• Windows 8, 7 i starsze wersje nie obsługują Roblox Studio\n"
 )
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
