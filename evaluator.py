@@ -1,7 +1,8 @@
 from parser import extract_ram, is_ram_ok, extract_cpu_profile
-
-
 import re
+from datetime import datetime
+import json
+import os
 
 # ==================================================
 # 1. BAZA WYJĄTKÓW – INTEL DUAL CORE (6 GEN +)
@@ -163,7 +164,7 @@ def evaluate_hardware(user_input: str) -> str:
 
     cpu_result = evaluate_cpu(cpu_part)
 
-    if cpu_result == "OK":
+   if cpu_result == "OK":
         return (
             "✅ *Sprzęt spełnia wymagania Roblox Studio*\n\n"
             f"• Procesor: **{cpu_part}**\n"
@@ -177,9 +178,29 @@ def evaluate_hardware(user_input: str) -> str:
             "Wymagane minimum: **4 rdzenie CPU**"
         )
 
+    # 👇 TUTAJ LOGUJEMY UNKNOWN
+    log_unknown_cpu(cpu_part, ram_gb)
+
     return (
         "❓ *Nie udało się jednoznacznie ocenić procesora*\n\n"
         f"Wykryty model: **{cpu_part}**\n\n"
         "Ten procesor wymaga ręcznej weryfikacji.\n"
         "Sprawdź liczbę rdzeni w specyfikacji producenta."
     )
+
+
+LOG_FILE = "unknown_cpu.log"
+
+def log_unknown_cpu(cpu: str, ram: int):
+    entry = {
+        "cpu": cpu,
+        "ram": ram,
+        "date": datetime.utcnow().strftime("%Y-%m-%d")
+    }
+
+    try:
+        with open(LOG_FILE, "a", encoding="utf-8") as f:
+            f.write(json.dumps(entry) + "\n")
+    except Exception:
+        # logowanie nie może nigdy zepsuć działania bota
+        pass
