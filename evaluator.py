@@ -1,5 +1,6 @@
 import re
 import json
+import requests
 from datetime import datetime
 
 # ==================================================
@@ -179,7 +180,26 @@ def evaluate_hardware(user_input: str) -> str:
             "Wymagane minimum: **4 rdzenie CPU**"
         )
 
-    log_unknown_cpu(cpu_part, ram_gb)
+    GSHEET_WEBHOOK_URL = os.environ.get("GSHEET_WEBHOOK_URL")
+
+def log_unknown_cpu(cpu: str, ram: int):
+    if not GSHEET_WEBHOOK_URL:
+        return
+
+    payload = {
+        "cpu": cpu,
+        "ram": ram,
+        "date": datetime.utcnow().strftime("%Y-%m-%d"),
+    }
+
+    try:
+        requests.post(
+            GSHEET_WEBHOOK_URL,
+            json=payload,
+            timeout=5,
+        )
+    except Exception:
+        pass
 
     return (
         "❓ *Nie udało się jednoznacznie ocenić procesora test *\n\n"
