@@ -1,57 +1,117 @@
 from parser import extract_ram, is_ram_ok, extract_cpu_profile
 
 
-def evaluate_hardware(user_input: str):
-    """
-    Zwraca gotowy komunikat dla użytkownika
-    """
+import re
 
-    ram = extract_ram(user_input)
-    cpu_profile = extract_cpu_profile(user_input)
+# =========================
+# BAZA WYJĄTKÓW – DUAL CORE
+# =========================
 
-    # --------------------------
-    # RAM – warunek krytyczny
-    # --------------------------
-    if ram is None:
-        return (
-            "❌ Nie wykryto ilości pamięci RAM.\n"
-            "Podaj ją w formacie np. \"8GB RAM\"."
-        )
+INTEL_DUAL_CORE_EXCEPTIONS = {
+    # i5 – 6 gen
+    "i5-6200u",
+    "i5-6300u",
+    "i5-6267u",
+    "i5-6287u",
 
-    if not is_ram_ok(ram):
-        return (
-            f"❌ {ram} GB RAM to za mało.\n"
-            "Roblox Studio wymaga minimum 8 GB RAM."
-        )
+    # i5 – 7 gen
+    "i5-7200u",
+    "i5-7267u",
+    "i5-7287u",
+    "i5-7300u",
+    "i5-7360u",
 
-    # --------------------------
-    # CPU PROFILE
-    # --------------------------
-    if cpu_profile == "igpu_ok":
-        return (
-            "✅ Sprzęt powinien poradzić sobie z Roblox Studio.\n"
-            "Zakładając użycie zintegrowanej grafiki."
-        )
+    # i5 – Y series
+    "i5-8200y",
+    "i5-8210y",
 
-    if cpu_profile == "igpu_limited":
-        return (
-            "⚠️ Roblox Studio uruchomi się, ale z ograniczeniami.\n"
-            "Możliwe spadki płynności przy większych projektach."
-        )
+    # i7 – 6 gen
+    "i7-6500u",
+    "i7-6600u",
 
-    if cpu_profile == "igpu_bad":
-        return (
-            "❌ Ten procesor z wbudowaną grafiką jest zbyt słaby.\n"
-            "Roblox Studio może działać bardzo wolno lub niestabilnie."
-        )
+    # i7 – 7 gen
+    "i7-7500u",
+    "i7-7600u",
+    "i7-7660u",
 
-    # --------------------------
-    # UNKNOWN – FURTKA AWARYJNA
-    # --------------------------
-    return (
-        "❓ Nie można jednoznacznie ocenić tego procesora.\n\n"
-        "🔎 Jak sprawdzić ręcznie:\n"
-        "1️⃣ Sprawdź liczbę rdzeni (minimum 4)\n"
-        "2️⃣ Sprawdź, czy procesor ma zintegrowaną grafikę\n"
-        "3️⃣ Jeśli iGPU jest nowsze niż Intel HD 520 / Vega 6 – zwykle da radę\n"
-    )
+    # i7 – Y series
+    "i7-8500y",
+    "i7-8600y",
+}
+
+# =========================
+# WYJĄTKI POZYTYWNE
+# =========================
+
+INTEL_SPECIAL_OK = {
+    "pentium gold 8505": 5,   # 1P + 4E
+    "n95": 4,
+    "n355": 8,
+    "n350": 8,
+}
+
+# =========================
+# POMOCNICZE
+# =========================
+
+def normalize_cpu_name(cpu: str) -> str:
+    return cpu.lower().replace(" ", "")
+
+def extract_cores_from_text(cpu: str):
+    cpu = cpu.lower()
+
+    # np. "4 cores", "6-core"
+    match = re.search(r"(\d+)\s*[-]?\s*cores?", cpu)
+    if match:
+        return int(match.group(1))
+
+    # np. "6C/12T"
+    match = re.search(r"\b(\d+)\s*c\b", cpu)
+    if match:
+        return int(match.group(1))
+
+    # hybrid: "1P+4E"
+    match = re.search(r"(\d+)\s*p\s*\+\s*(\d+)\s*e", cpu)
+    if match:
+        return int(match.group(1)) + int(match.group(2))
+
+    return None
+
+# =========================
+# GŁÓWNA OCENA CPU
+# =========================
+
+def evaluate_cpu(cpu_name: str) -> str:
+    cpu_raw = cpu_name.lower()
+    cpu_norm = normalize_cpu_name(cpu_name)
+
+    # Xeon – specjalny przypadek
+    if "xeon" in cpu_raw:
+        return "UNKNOWN"
+
+    # Jawne wyjątki 2-rdzeniowe
+    for model in INTEL_DUAL_CORE_EXCEPTIONS:
+        if model in cpu_norm:
+            return "NO"
+
+    # Jawne wyjątki pozytywne
+    for model, cores in INTEL_SPECIAL_OK.items():
+        if model.replace(" ", "") in cpu_norm:
+            return "OK" if cores >= 4 else "NO"
+
+    # Ryzen – ufamy rdzeniom
+    if "ryzen" in cpu_raw:
+        cores = extract_cores_from_text(cpu_raw)
+        if cores is None:
+            return "UNKNOWN"
+        return "OK" if cores >= 4 else "NO"
+
+    # Intel Core – domyślna reguła
+    if cpu_raw.startswith(("i3", "i5", "i7", "i9")):
+        cores = extract_cores_from_text(cpu_raw)
+        if cores is None:
+            return "UNKNOWN"
+        return "OK" if cores >= 4 else "NO"
+
+    # Inne przypadki
+    return "UNKNOWN"
