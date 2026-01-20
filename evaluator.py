@@ -182,7 +182,7 @@ def evaluate_hardware(user_input: str) -> str:
     log_unknown_cpu(cpu_part, ram_gb)
 
     return (
-        "❓ *Nie udało się jednoznacznie ocenić procesora*\n\n"
+        "❓ *Nie udało się jednoznacznie ocenić procesora test *\n\n"
         f"Wykryty model: **{cpu_part}**\n\n"
         "Ten procesor wymaga ręcznej weryfikacji.\n"
         "Sprawdź liczbę rdzeni w specyfikacji producenta."
