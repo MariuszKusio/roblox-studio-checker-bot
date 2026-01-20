@@ -1,8 +1,6 @@
-from parser import extract_ram, is_ram_ok, extract_cpu_profile
 import re
-from datetime import datetime
 import json
-import os
+from datetime import datetime
 
 # ==================================================
 # 1. BAZA WYJĄTKÓW – INTEL DUAL CORE (6 GEN +)
@@ -51,8 +49,10 @@ INTEL_SPECIAL_OK = {
     "n355": 8,
 }
 
+LOG_FILE = "unknown_cpu.log"
+
 # ==================================================
-# 3. POMOCNICZE
+# POMOCNICZE
 # ==================================================
 
 def normalize(text: str) -> str:
@@ -62,17 +62,14 @@ def normalize(text: str) -> str:
 def extract_cores_from_text(text: str):
     text = text.lower()
 
-    # np. "4 cores", "6-core"
     match = re.search(r"(\d+)\s*[-]?\s*cores?", text)
     if match:
         return int(match.group(1))
 
-    # np. "6C/12T"
     match = re.search(r"\b(\d+)\s*c\b", text)
     if match:
         return int(match.group(1))
 
-    # hybrid: "1P+4E"
     match = re.search(r"(\d+)\s*p\s*\+\s*(\d+)\s*e", text)
     if match:
         return int(match.group(1)) + int(match.group(2))
@@ -80,36 +77,45 @@ def extract_cores_from_text(text: str):
     return None
 
 
+def log_unknown_cpu(cpu: str, ram: int):
+    entry = {
+        "cpu": cpu,
+        "ram": ram,
+        "date": datetime.utcnow().strftime("%Y-%m-%d"),
+    }
+
+    try:
+        with open(LOG_FILE, "a", encoding="utf-8") as f:
+            f.write(json.dumps(entry) + "\n")
+    except Exception:
+        pass
+
+
 # ==================================================
-# 4. OCENA CPU
+# OCENA CPU
 # ==================================================
 
 def evaluate_cpu(cpu_name: str) -> str:
     cpu_raw = cpu_name.lower()
     cpu_norm = normalize(cpu_name)
 
-    # Xeon – ręczna weryfikacja
     if "xeon" in cpu_raw:
         return "UNKNOWN"
 
-    # Jawne wyjątki dual-core
     for model in INTEL_DUAL_CORE_EXCEPTIONS:
         if model in cpu_norm:
             return "NO"
 
-    # Jawne wyjątki pozytywne
     for model, cores in INTEL_SPECIAL_OK.items():
         if model.replace(" ", "") in cpu_norm:
             return "OK" if cores >= 4 else "NO"
 
-    # AMD Ryzen
     if "ryzen" in cpu_raw:
         cores = extract_cores_from_text(cpu_raw)
         if cores is None:
             return "UNKNOWN"
         return "OK" if cores >= 4 else "NO"
 
-    # Intel Core (i3/i5/i7/i9)
     if cpu_raw.startswith(("i3", "i5", "i7", "i9")):
         cores = extract_cores_from_text(cpu_raw)
         if cores is None:
@@ -120,7 +126,7 @@ def evaluate_cpu(cpu_name: str) -> str:
 
 
 # ==================================================
-# 5. OCENA RAM
+# RAM
 # ==================================================
 
 def extract_ram_gb(text: str):
@@ -131,15 +137,10 @@ def extract_ram_gb(text: str):
 
 
 # ==================================================
-# 6. GŁÓWNA FUNKCJA – UŻYWANA PRZEZ BOTA
+# GŁÓWNA FUNKCJA
 # ==================================================
 
 def evaluate_hardware(user_input: str) -> str:
-    """
-    Oczekiwany format:
-    'i5-8250U, 8GB RAM'
-    """
-
     if "," not in user_input:
         return (
             "❌ *Niepoprawny format danych*\n\n"
@@ -164,7 +165,7 @@ def evaluate_hardware(user_input: str) -> str:
 
     cpu_result = evaluate_cpu(cpu_part)
 
-   if cpu_result == "OK":
+    if cpu_result == "OK":
         return (
             "✅ *Sprzęt spełnia wymagania Roblox Studio*\n\n"
             f"• Procesor: **{cpu_part}**\n"
@@ -178,29 +179,11 @@ def evaluate_hardware(user_input: str) -> str:
             "Wymagane minimum: **4 rdzenie CPU**"
         )
 
-    # 👇 TUTAJ LOGUJEMY UNKNOWN
     log_unknown_cpu(cpu_part, ram_gb)
 
     return (
-        "❓ *Nie udało się jednoznacznie ocenić procesora test*\n\n"
+        "❓ *Nie udało się jednoznacznie ocenić procesora*\n\n"
         f"Wykryty model: **{cpu_part}**\n\n"
         "Ten procesor wymaga ręcznej weryfikacji.\n"
         "Sprawdź liczbę rdzeni w specyfikacji producenta."
     )
-
-
-LOG_FILE = "unknown_cpu.log"
-
-def log_unknown_cpu(cpu: str, ram: int):
-    entry = {
-        "cpu": cpu,
-        "ram": ram,
-        "date": datetime.utcnow().strftime("%Y-%m-%d")
-    }
-
-    try:
-        with open(LOG_FILE, "a", encoding="utf-8") as f:
-            f.write(json.dumps(entry) + "\n")
-    except Exception:
-        # logowanie nie może nigdy zepsuć działania bota
-        pass
