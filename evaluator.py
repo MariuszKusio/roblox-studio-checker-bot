@@ -123,8 +123,7 @@ def evaluate_hardware(user_input: str) -> str:
         return f"❌ Procesor zbyt słaby\nCPU: {cpu_part}"
 
     # UNKNOWN
-    log_unknown_cpu(cpu_part, ram_gb)
-    def log_unknown_cpu(cpu: str, ram: int):
+   def log_unknown_cpu(cpu: str, ram: int):
     print("DEBUG: log_unknown_cpu() called")
 
     if not GSHEET_WEBHOOK_URL:
