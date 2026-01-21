@@ -124,8 +124,26 @@ def evaluate_hardware(user_input: str) -> str:
 
     # UNKNOWN
     log_unknown_cpu(cpu_part, ram_gb)
-    return (
-        "❓ Nie udało się jednoznacznie ocenić procesora\n\n"
-        f"CPU: {cpu_part}\n"
-        "Model zapisany do dalszej analizy."
-    )
+    def log_unknown_cpu(cpu: str, ram: int):
+    print("DEBUG: log_unknown_cpu() called")
+
+    if not GSHEET_WEBHOOK_URL:
+        print("DEBUG: GSHEET_WEBHOOK_URL is EMPTY")
+        return
+
+    payload = {
+        "cpu": cpu,
+        "ram": ram,
+        "date": datetime.utcnow().strftime("%Y-%m-%d"),
+    }
+
+    try:
+        response = requests.post(
+            GSHEET_WEBHOOK_URL,
+            json=payload,
+            timeout=5,
+        )
+        print("DEBUG: Google status code:", response.status_code)
+        print("DEBUG: Google response:", response.text)
+    except Exception as e:
+        print("DEBUG: Exception while sending:", e)
