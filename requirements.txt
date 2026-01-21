@@ -1,5 +1,6 @@
 python-telegram-bot[webhooks]==20.4
 fastapi
 uvicorn
+requests
 
 
