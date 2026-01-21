@@ -121,13 +121,13 @@ def evaluate_cpu(cpu_name: str) -> str:
             return "OK" if cores >= 4 else "NO"
             
     if "core ultra" in cpu_raw:
-    return "OK"
+        return "OK"
 
     if "snapdragon x elite" in cpu_raw or "snapdragon x plus" in cpu_raw:
-    return "OK"
+        return "OK"
 
     if "snapdragon" in cpu_raw:
-    return "NO"
+        return "NO"
 
 
     if "ryzen" in cpu_raw or cpu_raw.startswith(("i3", "i5", "i7", "i9")):
