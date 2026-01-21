@@ -41,6 +41,10 @@ INTEL_DUAL_CORE_EXCEPTIONS = {
     "i7-10510u",
     "i7-1060g7",
     "i7-1068ng7",
+
+    # others
+    "Pentium Gold 7505",
+    "Pnetium Gold 6405U",
 }
 
 INTEL_SPECIAL_OK = {
@@ -115,6 +119,9 @@ def evaluate_cpu(cpu_name: str) -> str:
     for model, cores in INTEL_SPECIAL_OK.items():
         if model.replace(" ", "") in cpu_norm:
             return "OK" if cores >= 4 else "NO"
+            
+    if "core ultra" in cpu_raw:
+    return "OK"
 
     if "ryzen" in cpu_raw or cpu_raw.startswith(("i3", "i5", "i7", "i9")):
         cores = extract_cores_from_text(cpu_raw)
