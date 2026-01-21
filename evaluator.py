@@ -166,7 +166,7 @@ def evaluate_hardware(user_input: str) -> str:
 
     if cpu_result == "NO":
         return (
-            "❌ *Procesor zbyt słaby*\n\n"
+            "❌ *Procesor zbyt słaby na Roblox Studio*\n\n"
             f"CPU: **{cpu_part}**\n"
             "Wymagane minimum: **4 rdzenie CPU**"
         )
