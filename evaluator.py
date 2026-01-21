@@ -123,6 +123,13 @@ def evaluate_cpu(cpu_name: str) -> str:
     if "core ultra" in cpu_raw:
     return "OK"
 
+    if "snapdragon x elite" in cpu_raw or "snapdragon x plus" in cpu_raw:
+    return "OK"
+
+    if "snapdragon" in cpu_raw:
+    return "NO"
+
+
     if "ryzen" in cpu_raw or cpu_raw.startswith(("i3", "i5", "i7", "i9")):
         cores = extract_cores_from_text(cpu_raw)
         if cores is None:
