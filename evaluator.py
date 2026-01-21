@@ -52,11 +52,14 @@ def extract_ram_gb(text: str):
     return int(match.group(1)) if match else None
 
 # ==================================================
-# GOOGLE SHEETS LOGGER
+# GOOGLE SHEETS LOGGER (DEBUG)
 # ==================================================
 
 def log_unknown_cpu(cpu: str, ram: int):
+    print("DEBUG: log_unknown_cpu() CALLED")
+
     if not GSHEET_WEBHOOK_URL:
+        print("DEBUG: GSHEET_WEBHOOK_URL is EMPTY or NOT SET")
         return
 
     payload = {
@@ -65,10 +68,20 @@ def log_unknown_cpu(cpu: str, ram: int):
         "date": datetime.utcnow().strftime("%Y-%m-%d"),
     }
 
+    print("DEBUG: Sending payload to Google Sheets:")
+    print(payload)
+    print("DEBUG: URL:", GSHEET_WEBHOOK_URL)
+
     try:
-        requests.post(GSHEET_WEBHOOK_URL, json=payload, timeout=5)
-    except Exception:
-        pass
+        response = requests.post(
+            GSHEET_WEBHOOK_URL,
+            json=payload,
+            timeout=5,
+        )
+        print("DEBUG: Google status code:", response.status_code)
+        print("DEBUG: Google response text:", response.text)
+    except Exception as e:
+        print("DEBUG: Exception while sending to Google:", e)
 
 # ==================================================
 # OCENA CPU
@@ -128,6 +141,7 @@ def evaluate_hardware(user_input: str) -> str:
 
     # UNKNOWN
     log_unknown_cpu(cpu_part, ram_gb)
+
     return (
         "❓ Nie udało się jednoznacznie ocenić procesora\n\n"
         f"CPU: {cpu_part}\n"
