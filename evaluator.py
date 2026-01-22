@@ -244,25 +244,63 @@ def evaluate_hardware(user_input: str) -> str:
         return "❌ Nie wykryto ilości RAM (np. 8GB)."
 
     if ram_gb < 8:
-        return f"❌ Za mało RAM: {ram_gb} GB (minimum 8 GB)."
+        return (
+            "❌ *Za mało pamięci RAM*\n\n"
+            f"Wykryto: **{ram_gb} GB RAM**\n"
+            "Minimalne wymaganie: **8 GB RAM**"
+        )
 
     cpu_result = evaluate_cpu(cpu_part)
 
-    if cpu_result == "OK":
-        return (
-            "✅ *Sprzęt spełnia wymagania Roblox Studio*\n\n"
-            f"CPU: **{cpu_part}**\n"
-            f"RAM: **{ram_gb} GB**"
-        )
-
+    # =========================
+    # CPU – ZBYT SŁABY
+    # =========================
     if cpu_result == "NO":
         return (
             "❌ *Procesor zbyt słaby na Roblox Studio*\n\n"
             f"CPU: **{cpu_part}**\n"
-            "Wymagane minimum: **4 rdzenie CPU**"
+            "Roblox Studio nie będzie działał poprawnie\n"
+            "w projektach realizowanych na kursie."
         )
 
-    # UNKNOWN
+    # =========================
+    # CPU – WARUNKOWO
+    # =========================
+    if cpu_result == "WEAK":
+        return (
+            "⚠️ *Sprzęt spełnia minimalne wymagania*\n\n"
+            f"CPU: **{cpu_part}**\n"
+            "Roblox Studio uruchomi się, jednak przy większych\n"
+            "projektach (np. rozbudowane mapy) mogą wystąpić\n"
+            "znaczące spadki wydajności."
+        )
+
+    # =========================
+    # CPU – OK
+    # =========================
+    if cpu_result == "OK":
+        return (
+            "✅ *Sprzęt odpowiedni do pracy w Roblox Studio*\n\n"
+            f"CPU: **{cpu_part}**\n"
+            "Praca przy średnich i większych projektach\n"
+            "powinna przebiegać stabilnie."
+        )
+
+    # =========================
+    # CPU – BARDZO DOBRY
+    # =========================
+    if cpu_result == "VERY_GOOD":
+        return (
+            "🚀 *Sprzęt bardzo dobrze nadaje się do Roblox Studio*\n\n"
+            f"CPU: **{cpu_part}**\n"
+            "Roblox Studio będzie działał płynnie nawet\n"
+            "przy złożonych projektach oraz jednoczesnej\n"
+            "pracy na Zoomie."
+        )
+
+    # =========================
+    # CPU – NIEZNANY (TYLKO TU)
+    # =========================
     log_unknown_cpu(cpu_part, ram_gb)
     return (
         "❓ *Nie udało się jednoznacznie ocenić procesora*\n\n"
