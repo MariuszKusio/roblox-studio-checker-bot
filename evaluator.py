@@ -126,47 +126,109 @@ def evaluate_cpu(cpu_name: str) -> str:
     cpu_raw = cpu_name.lower()
     cpu_norm = normalize(cpu_name)
 
+    # =========================
+    # XEON – niejednoznaczne
+    # =========================
     if "xeon" in cpu_raw:
         return "UNKNOWN"
 
-    for model in INTEL_DUAL_CORE_EXCEPTIONS:
-        if model in cpu_norm:
-            return "NO"
-
-    for model, cores in INTEL_SPECIAL_OK.items():
-        if model.replace(" ", "") in cpu_norm:
-            return "OK" if cores >= 4 else "NO"
-            
+    # =========================
+    # INTEL CORE ULTRA
+    # =========================
     if "core ultra" in cpu_raw:
-        return "OK"
+        return "VERY_GOOD"
 
+    # =========================
+    # SNAPDRAGON
+    # =========================
     if "snapdragon x elite" in cpu_raw or "snapdragon x plus" in cpu_raw:
-        return "OK"
+        return "VERY_GOOD"
 
     if "snapdragon" in cpu_raw:
         return "NO"
 
+    # =========================
+    # INTEL – DUAL CORE WYJĄTKI
+    # =========================
+    for model in INTEL_DUAL_CORE_EXCEPTIONS:
+        if model in cpu_norm:
+            return "NO"
 
+    # =========================
+    # INTEL – SPECJALNE MODELE OK
+    # =========================
+    for model, cores in INTEL_SPECIAL_OK.items():
+        if model.replace(" ", "") in cpu_norm:
+            return "VERY_GOOD"
+
+    # =========================
+    # AMD RYZEN – WYJĄTKI 2C
+    # =========================
+    for model in AMD_DUAL_CORE_EXCEPTIONS:
+        if model in cpu_raw:
+            return "NO"
+
+    # =========================
+    # AMD RYZEN – SERIE
+    # =========================
     if "ryzen" in cpu_raw:
-        cpu_lower = cpu_raw.lower()
-
-        # twarde wyjątki – 2 rdzenie
-        for model in AMD_DUAL_CORE_EXCEPTIONS:
-            if model in cpu_lower:
-                return "NO"
-
-        # wyciągamy serię (np. 7500 z "Ryzen 3 7500F")
-        match = re.search(r"ryzen\s+\d\s+(\d{4})", cpu_lower)
+        match = re.search(r"ryzen\s+\d\s+(\d{4})", cpu_raw)
         if match:
             series = int(match.group(1))
 
             if series >= 4000:
-                return "OK"
+                if "ryzen 3" in cpu_raw:
+                    return "OK"
+                else:
+                    return "VERY_GOOD"
             else:
                 return "WEAK"
 
-    return "UNKNOWN"
+        return "UNKNOWN"
 
+    # =========================
+    # INTEL – i3 / i5 / i7 / i9
+    # =========================
+    if cpu_raw.startswith(("i3", "i5", "i7", "i9")):
+        # wyciągamy generację (np. i5-8250u → 8)
+        match = re.search(r"i[3579]-(\d)", cpu_raw)
+        if not match:
+            return "UNKNOWN"
+
+        gen = int(match.group(1))
+
+        # i3
+        if cpu_raw.startswith("i3"):
+            if gen >= 10:
+                return "OK"
+            return "NO"
+
+        # i5
+        if cpu_raw.startswith("i5"):
+            if gen in (6, 7):
+                return "WEAK"
+            if gen in (8, 9):
+                return "OK"
+            if gen >= 10:
+                return "VERY_GOOD"
+
+        # i7
+        if cpu_raw.startswith("i7"):
+            if gen in (6, 7):
+                return "OK"
+            if gen in (8, 9):
+                return "VERY_GOOD"
+            if gen >= 10:
+                return "VERY_GOOD"
+
+        # i9 (zawsze mocne)
+        if cpu_raw.startswith("i9"):
+            return "VERY_GOOD"
+
+    # =========================
+    # FALLBACK
+    # =========================
+    return "UNKNOWN"
 # ==================================================
 # GŁÓWNA FUNKCJA
 # ==================================================
