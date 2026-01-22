@@ -150,19 +150,20 @@ def evaluate_cpu(cpu_name: str) -> str:
     if "ryzen" in cpu_raw:
         cpu_lower = cpu_raw.lower()
 
-    # twarde wyjątki dual-core
-    for model in AMD_DUAL_CORE_EXCEPTIONS:
-        if model in cpu_lower:
-            return "NO"
+        # twarde wyjątki – 2 rdzenie
+        for model in AMD_DUAL_CORE_EXCEPTIONS:
+            if model in cpu_lower:
+                return "NO"
 
-    series = extract_ryzen_series(cpu_lower)
+        # wyciągamy serię (np. 7500 z "Ryzen 3 7500F")
+        match = re.search(r"ryzen\s+\d\s+(\d{4})", cpu_lower)
+        if match:
+            series = int(match.group(1))
 
-    # jeśli znamy serię
-    if series:
-        if series >= 4000:
-            return "OK"
-        else:
-            return "WEAK"
+            if series >= 4000:
+                return "OK"
+            else:
+                return "WEAK"
 
     return "UNKNOWN"
 
