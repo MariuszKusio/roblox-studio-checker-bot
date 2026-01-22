@@ -148,7 +148,7 @@ def evaluate_cpu(cpu_name: str) -> str:
 
 
     if "ryzen" in cpu_raw:
-    cpu_lower = cpu_raw.lower()
+        cpu_lower = cpu_raw.lower()
 
     # twarde wyjątki dual-core
     for model in AMD_DUAL_CORE_EXCEPTIONS:
