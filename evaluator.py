@@ -191,7 +191,7 @@ def evaluate_cpu(cpu_name: str) -> str:
     # =========================
     if cpu_raw.startswith(("i3", "i5", "i7", "i9")):
         # wyciągamy generację (np. i5-8250u → 8)
-        match = re.search(r"i[3579]-(\d)", cpu_raw)
+        match = re.search(r"i[3579]-(\d{1,2})", cpu_raw)
         if not match:
             return "UNKNOWN"
 
