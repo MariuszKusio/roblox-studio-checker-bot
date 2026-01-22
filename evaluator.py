@@ -47,6 +47,13 @@ INTEL_DUAL_CORE_EXCEPTIONS = {
     "Pnetium Gold 6405U",
 }
 
+AMD_DUAL_CORE_EXCEPTIONS = {
+    "ryzen 3 2200u",
+    "ryzen 3 2300u",
+    "ryzen r1505g",
+    "ryzen r1606g",
+}
+
 INTEL_SPECIAL_OK = {
     "pentium gold 8505": 5,
     "n95": 4,
@@ -81,6 +88,16 @@ def extract_cores_from_text(text: str):
 def extract_ram_gb(text: str):
     match = re.search(r"(\d+)\s*gb", text.lower())
     return int(match.group(1)) if match else None
+
+# ==================================================
+# Funkcja da samych ryzenów
+# ==================================================
+
+def extract_ryzen_series(cpu: str):
+    match = re.search(r"ryzen\s+\d\s+(\d{4})", cpu.lower())
+    if match:
+        return int(match.group(1))
+    return None
 
 # ==================================================
 # GOOGLE SHEETS LOGGER (PRODUCTION)
@@ -131,12 +148,21 @@ def evaluate_cpu(cpu_name: str) -> str:
 
 
     if "ryzen" in cpu_raw:
-        if "ryzen 9" in cpu_raw or "ryzen 7" in cpu_raw or "ryzen 5" in cpu_raw:
-            return "OK"
+    cpu_lower = cpu_raw.lower()
 
-    # Ryzen 3 – potencjalnie za słaby
-    if "ryzen 3" in cpu_raw:
-        return "NO"
+    # twarde wyjątki dual-core
+    for model in AMD_DUAL_CORE_EXCEPTIONS:
+        if model in cpu_lower:
+            return "NO"
+
+    series = extract_ryzen_series(cpu_lower)
+
+    # jeśli znamy serię
+    if series:
+        if series >= 4000:
+            return "OK"
+        else:
+            return "WEAK"
 
     return "UNKNOWN"
 
