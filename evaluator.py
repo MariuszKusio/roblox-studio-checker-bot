@@ -130,11 +130,13 @@ def evaluate_cpu(cpu_name: str) -> str:
         return "NO"
 
 
-    if "ryzen" in cpu_raw or cpu_raw.startswith(("i3", "i5", "i7", "i9")):
-        cores = extract_cores_from_text(cpu_raw)
-        if cores is None:
-            return "UNKNOWN"
-        return "OK" if cores >= 4 else "NO"
+    if "ryzen" in cpu_raw:
+        if "ryzen 9" in cpu_raw or "ryzen 7" in cpu_raw or "ryzen 5" in cpu_raw:
+            return "OK"
+
+    # Ryzen 3 – potencjalnie za słaby
+    if "ryzen 3" in cpu_raw:
+        return "NO"
 
     return "UNKNOWN"
 
