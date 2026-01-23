@@ -127,7 +127,7 @@ def evaluate_cpu(cpu_name: str) -> str:
     cpu_norm = normalize(cpu_name)
 
     # =========================
-    # XEON – niejednoznaczne
+    # XEON
     # =========================
     if "xeon" in cpu_raw:
         return "UNKNOWN"
@@ -148,46 +148,38 @@ def evaluate_cpu(cpu_name: str) -> str:
         return "NO"
 
     # =========================
-    # INTEL – DUAL CORE WYJĄTKI
+    # INTEL – TWARDO ODRZUCANE
     # =========================
-    for model in INTEL_DUAL_CORE_EXCEPTIONS:
+    for model in INTEL_HARD_REJECT:
         if model in cpu_norm:
             return "NO"
 
     # =========================
     # INTEL – SPECJALNE MODELE OK
     # =========================
-    for model, cores in INTEL_SPECIAL_OK.items():
+    for model in INTEL_SPECIAL_OK:
         if model.replace(" ", "") in cpu_norm:
             return "VERY_GOOD"
 
     # =========================
-    # AMD RYZEN – WYJĄTKI 2C
-    # =========================
-    for model in AMD_DUAL_CORE_EXCEPTIONS:
-        if model in cpu_raw:
-            return "NO"
-
-    # =========================
-    # AMD RYZEN – SERIE
+    # AMD RYZEN
     # =========================
     if "ryzen" in cpu_raw:
-        match = re.search(r"ryzen\s+\d\s+(\d{4})", cpu_raw)
-        if match:
-            series = int(match.group(1))
+        match = re.search(r"ryzen\s+[3579]\s+(\d{4})", cpu_raw)
+        if not match:
+            return "UNKNOWN"
 
-            if series >= 4000:
-                if "ryzen 3" in cpu_raw:
-                    return "OK"
-                else:
-                    return "VERY_GOOD"
-            else:
-                return "WEAK"
+        series = int(match.group(1))
 
-        return "UNKNOWN"
+        if series >= 4000:
+            if "ryzen 3" in cpu_raw:
+                return "OK"
+            return "VERY_GOOD"
+
+        return "WEAK"
 
     # =========================
-    # INTEL – i3 / i5 / i7 / i9
+    # INTEL CORE i3 / i5 / i7 / i9
     # =========================
     if cpu_raw.startswith(("i3", "i5", "i7", "i9")):
         match = re.search(r"i[3579]-(\d{1,2})", cpu_raw)
@@ -196,38 +188,38 @@ def evaluate_cpu(cpu_name: str) -> str:
 
         gen = int(match.group(1))
 
-     # i3
-     if cpu_raw.startswith("i3"):
-         if gen >= 10:
-             return "OK"
-         return "NO"
+        # i3
+        if cpu_raw.startswith("i3"):
+            if gen >= 10:
+                return "OK"
+            return "NO"
 
-     # i5
-     if cpu_raw.startswith("i5"):
-         if gen in (6, 7):
-             return "WEAK"
-         if gen in (8, 9):
-             return "OK"
-         if gen >= 10:
-             return "VERY_GOOD"
+        # i5
+        if cpu_raw.startswith("i5"):
+            if gen in (6, 7):
+                return "WEAK"
+            if gen in (8, 9):
+                return "OK"
+            if gen >= 10:
+                return "VERY_GOOD"
 
-     # i7
-     if cpu_raw.startswith("i7"):
-         if gen in (6, 7):
-             return "OK"
-         if gen in (8, 9):
-             return "VERY_GOOD"
-         if gen >= 10:
-             return "VERY_GOOD"
+        # i7
+        if cpu_raw.startswith("i7"):
+            if gen in (6, 7):
+                return "OK"
+            if gen >= 8:
+                return "VERY_GOOD"
 
-     # i9 – zawsze bardzo dobre
-     if cpu_raw.startswith("i9"):
-         return "VERY_GOOD"
+        # i9
+        if cpu_raw.startswith("i9"):
+            return "VERY_GOOD"
 
     # =========================
     # FALLBACK
     # =========================
     return "UNKNOWN"
+
+
 # ==================================================
 # GŁÓWNA FUNKCJA
 # ==================================================
