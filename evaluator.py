@@ -111,6 +111,30 @@ def extract_ryzen_series(cpu: str):
         return int(match.group(1))
     return None
 
+
+# ==================================================
+# INTEL – WYCIĄGANIE GENERACJI (POPRAWNE)
+# ==================================================
+
+def extract_intel_generation(cpu: str):
+    """
+    Zwraca generację procesora Intel Core:
+    6,7,8,9,10,11,12,13...
+    """
+    match = re.search(r"i[3579]-(\d{4,5})", cpu.lower())
+    if not match:
+        return None
+
+    model_number = match.group(1)
+
+    # 6–9 gen → pierwsza cyfra
+    if len(model_number) == 4:
+        return int(model_number[0])
+
+    # 10+ gen → pierwsze dwie cyfry
+    return int(model_number[:2])
+
+
 # ==================================================
 # GOOGLE SHEETS LOGGER (PRODUCTION)
 # ==================================================
