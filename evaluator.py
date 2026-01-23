@@ -194,11 +194,10 @@ def evaluate_cpu(cpu_name: str) -> str:
     # INTEL CORE i3 / i5 / i7 / i9
     # =========================
     if cpu_raw.startswith(("i3", "i5", "i7", "i9")):
-        match = re.search(r"i[3579]-(\d{1,2})", cpu_raw)
-        if not match:
+        gen = extract_intel_generation(cpu_raw)
+        if gen is None:
             return "UNKNOWN"
 
-        gen = int(match.group(1))
 
         # i3
         if cpu_raw.startswith("i3"):
