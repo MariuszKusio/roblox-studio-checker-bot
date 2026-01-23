@@ -185,10 +185,10 @@ def evaluate_hardware(user_input: str) -> str:
     cpu_result = evaluate_cpu(cpu_part)
 
     if cpu_result == "NO":
-        return "❌ Procesor zbyt słaby na Roblox Studio."
+        return "❌ Procesor stanowczo zbyt słaby na Roblox Studio."
 
     if cpu_result == "WEAK":
-        return "⚠️ Sprzęt spełnia minimum, ale mogą wystąpić spadki wydajności."
+        return "⚠️ Sprzęt jest zbyt słaby na roblox Studio."
 
     if cpu_result == "OK":
         return "✅ Roblox Studio będzie działał poprawnie."
