@@ -190,40 +190,39 @@ def evaluate_cpu(cpu_name: str) -> str:
     # INTEL – i3 / i5 / i7 / i9
     # =========================
     if cpu_raw.startswith(("i3", "i5", "i7", "i9")):
-        # wyciągamy generację (np. i5-8250u → 8)
         match = re.search(r"i[3579]-(\d{1,2})", cpu_raw)
         if not match:
             return "UNKNOWN"
 
         gen = int(match.group(1))
 
-        # i3
-        if cpu_raw.startswith("i3"):
-            if gen >= 10:
-                return "OK"
-            return "NO"
+     # i3
+     if cpu_raw.startswith("i3"):
+         if gen >= 10:
+             return "OK"
+         return "NO"
 
-        # i5
-        if cpu_raw.startswith("i5"):
-            if gen in (6, 7):
-                return "WEAK"
-            if gen in (8, 9):
-                return "OK"
-            if gen >= 10:
-                return "VERY_GOOD"
+     # i5
+     if cpu_raw.startswith("i5"):
+         if gen in (6, 7):
+             return "WEAK"
+         if gen in (8, 9):
+             return "OK"
+         if gen >= 10:
+             return "VERY_GOOD"
 
-        # i7
-        if cpu_raw.startswith("i7"):
-            if gen in (6, 7):
-                return "OK"
-            if gen in (8, 9):
-                return "VERY_GOOD"
-            if gen >= 10:
-                return "VERY_GOOD"
+     # i7
+     if cpu_raw.startswith("i7"):
+         if gen in (6, 7):
+             return "OK"
+         if gen in (8, 9):
+             return "VERY_GOOD"
+         if gen >= 10:
+             return "VERY_GOOD"
 
-        # i9 (zawsze mocne)
-        if cpu_raw.startswith("i9"):
-            return "VERY_GOOD"
+     # i9 – zawsze bardzo dobre
+     if cpu_raw.startswith("i9"):
+         return "VERY_GOOD"
 
     # =========================
     # FALLBACK
