@@ -7,6 +7,18 @@ from datetime import datetime
 # WYJĄTKI – INTEL DUAL CORE (6 GEN +)
 # ==================================================
 
+INTEL_HARD_REJECT = {
+    # stare i3 (2 rdzenie)
+    "i3-6100u",
+    "i3-7100u",
+    "i3-8130u",
+    "i3-8145u",
+
+    # bardzo stare / energooszczędne
+    "i5-4300u",
+    "i5-4200u",
+}
+
 INTEL_DUAL_CORE_EXCEPTIONS = {
     #6/7/8 gen - i5
     "i5-6200u",
