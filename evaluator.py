@@ -66,7 +66,15 @@ def extract_intel_generation(cpu_norm: str):
         return None
 
     model = match.group(1)
-    return int(model[:2]) if len(model) == 5 else int(model[0])
+
+    # 10+ generacja (10xxx, 11xxx, 12xxx, 13xxx)
+    first_two = int(model[:2])
+    if first_two >= 10:
+        return first_two
+
+    # 6–9 generacja
+    return int(model[0])
+
 
 # ==================================================
 # GOOGLE SHEETS LOGGER
