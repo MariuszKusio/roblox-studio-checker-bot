@@ -17,7 +17,7 @@ INTEL_HARD_REJECT = {
 }
 
 # ==================================================
-# INTEL / AMD – DUAL CORE (WARUNKOWO / SŁABE)
+# INTEL / AMD – DUAL CORE (WARUNKOWO)
 # ==================================================
 
 INTEL_DUAL_CORE_EXCEPTIONS = {
@@ -30,10 +30,10 @@ INTEL_DUAL_CORE_EXCEPTIONS = {
 }
 
 AMD_DUAL_CORE_EXCEPTIONS = {
-    "ryzen 3 2200u",
-    "ryzen 3 2300u",
-    "ryzen r1505g",
-    "ryzen r1606g",
+    "ryzen32200u",
+    "ryzen32300u",
+    "ryzenr1505g",
+    "ryzenr1606g",
 }
 
 # ==================================================
@@ -41,7 +41,7 @@ AMD_DUAL_CORE_EXCEPTIONS = {
 # ==================================================
 
 INTEL_SPECIAL_OK = {
-    "pentium gold 8505",
+    "pentiumgold8505",
     "n95",
     "n350",
     "n355",
@@ -60,8 +60,8 @@ def extract_ram_gb(text: str):
     match = re.search(r"(\d+)\s*gb", text.lower())
     return int(match.group(1)) if match else None
 
-def extract_intel_generation(cpu: str):
-    match = re.search(r"i[3579]-(\d{4,5})", cpu)
+def extract_intel_generation(cpu_norm: str):
+    match = re.search(r"i[3579]-(\d{4,5})", cpu_norm)
     if not match:
         return None
 
@@ -96,24 +96,25 @@ def evaluate_cpu(cpu_name: str) -> str:
     cpu_norm = normalize(cpu_name)
 
     # ---------- XEON ----------
-    if "xeon" in cpu_raw:
+    if "xeon" in cpu_norm:
         return "UNKNOWN"
 
-    # =========================
-    # APPLE SILICON (M1 / M2 / M3)
-    # =========================
-    if re.search(r"\bm[123]\b", cpu_raw) or "apple m" in cpu_raw:
+    # ---------- APPLE SILICON ----------
+    if re.search(r"\bm[123]\b", cpu_raw) or "applem" in cpu_norm:
         return "VERY_GOOD"
 
-
     # ---------- INTEL CORE ULTRA ----------
-    if "core ultra" in cpu_raw:
+    if "coreultra" in cpu_norm:
         return "VERY_GOOD"
 
     # ---------- SNAPDRAGON ----------
-    if "snapdragon x elite" in cpu_raw or "snapdragon x plus" in cpu_raw:
+    if "snapdragonxelite" in cpu_norm or "snapdragonxplus" in cpu_norm:
         return "VERY_GOOD"
-    if "snapdragon" in cpu_raw:
+    if "snapdragon" in cpu_norm:
+        return "NO"
+
+    # ---------- CELERON / ATOM ----------
+    if "celeron" in cpu_norm or "atom" in cpu_norm:
         return "NO"
 
     # ---------- HARD REJECT ----------
@@ -121,13 +122,13 @@ def evaluate_cpu(cpu_name: str) -> str:
         if model in cpu_norm:
             return "NO"
 
-    # ---------- DUAL CORE EXCEPTIONS ----------
+    # ---------- DUAL CORE ----------
     for model in INTEL_DUAL_CORE_EXCEPTIONS:
         if model in cpu_norm:
             return "WEAK"
 
     for model in AMD_DUAL_CORE_EXCEPTIONS:
-        if model in cpu_raw:
+        if model in cpu_norm:
             return "WEAK"
 
     # ---------- INTEL SPECIAL OK ----------
@@ -136,38 +137,40 @@ def evaluate_cpu(cpu_name: str) -> str:
             return "VERY_GOOD"
 
     # ---------- AMD RYZEN ----------
-    if "ryzen" in cpu_raw:
-        match = re.search(r"ryzen\s+([3579])\s+(\d{4})", cpu_raw)
+    if "ryzen" in cpu_norm:
+        match = re.search(r"ryzen([3579])(\d{4})", cpu_norm)
         if not match:
             return "UNKNOWN"
 
         tier = int(match.group(1))
-        series = int(match.group(2))
-
         if tier == 3:
             return "OK"
         return "VERY_GOOD"
 
     # ---------- INTEL CORE ----------
-    if cpu_raw.startswith(("i3", "i5", "i7", "i9")):
-        gen = extract_intel_generation(cpu_raw)
+    if any(x in cpu_norm for x in ("i3-", "i5-", "i7-", "i9-")):
+        gen = extract_intel_generation(cpu_norm)
         if gen is None:
             return "UNKNOWN"
 
-        if cpu_raw.startswith("i3"):
+        # zbyt stare generacje
+        if gen < 6:
+            return "NO"
+
+        if "i3-" in cpu_norm:
             return "OK" if gen >= 10 else "NO"
 
-        if cpu_raw.startswith("i5"):
+        if "i5-" in cpu_norm:
             if gen in (6, 7):
                 return "WEAK"
             if gen in (8, 9):
                 return "OK"
             return "VERY_GOOD"
 
-        if cpu_raw.startswith("i7"):
+        if "i7-" in cpu_norm:
             return "OK" if gen in (6, 7) else "VERY_GOOD"
 
-        if cpu_raw.startswith("i9"):
+        if "i9-" in cpu_norm:
             return "VERY_GOOD"
 
     return "UNKNOWN"
@@ -195,7 +198,7 @@ def evaluate_hardware(user_input: str) -> str:
         return "❌ Procesor stanowczo zbyt słaby na Roblox Studio."
 
     if cpu_result == "WEAK":
-        return "⚠️ Sprzęt jest zbyt słaby na roblox Studio."
+        return "⚠️ Roblox Studio uruchomi się, ale mogą wystąpić spadki wydajności."
 
     if cpu_result == "OK":
         return "✅ Roblox Studio będzie działał poprawnie."
