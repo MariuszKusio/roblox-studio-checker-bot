@@ -122,12 +122,6 @@ def evaluate_cpu(cpu_name: str) -> str:
         return "NO"
 
     # =========================
-    # CELERON / ATOM
-    # =========================
-    if "celeron" in cpu_norm or "atom" in cpu_norm:
-        return "NO"
-
-    # =========================
     # INTEL CORE (GENERACJA)
     # =========================
     gen = extract_intel_generation(cpu_norm)
@@ -186,6 +180,12 @@ def evaluate_cpu(cpu_name: str) -> str:
 
         if "i9-" in cpu_norm:
             return "VERY_GOOD"
+
+    # =========================
+    # CELERON / ATOM
+    # =========================
+    if "celeron" in cpu_norm or "atom" in cpu_norm:
+        return "NO"
 
     return "UNKNOWN"
 
