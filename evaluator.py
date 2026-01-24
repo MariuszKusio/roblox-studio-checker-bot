@@ -17,7 +17,7 @@ INTEL_HARD_REJECT = {
 }
 
 # ==================================================
-# INTEL / AMD – DUAL CORE (STARE / WARUNKOWE)
+# INTEL / AMD – DUAL CORE (STARE / ZBYT SŁABE)
 # ==================================================
 
 INTEL_DUAL_CORE_EXCEPTIONS = {
@@ -67,14 +67,12 @@ def extract_intel_generation(cpu_norm: str):
 
     model = match.group(1)
 
-    # 10+ generacja (10xxx, 11xxx, 12xxx, 13xxx)
-    first_two = int(model[:2])
-    if first_two >= 10:
-        return first_two
+    # 10+ generacja
+    if len(model) == 5:
+        return int(model[:2])
 
     # 6–9 generacja
     return int(model[0])
-
 
 # ==================================================
 # GOOGLE SHEETS LOGGER
@@ -104,6 +102,21 @@ def evaluate_cpu(cpu_name: str) -> str:
     cpu_norm = normalize(cpu_name)
 
     # =========================
+    # BEZWZGLĘDNE ODRZUCENIA – PRIORYTET
+    # =========================
+    for model in INTEL_HARD_REJECT:
+        if model in cpu_norm:
+            return "NO"
+
+    for model in INTEL_DUAL_CORE_EXCEPTIONS:
+        if model in cpu_norm:
+            return "NO"
+
+    for model in AMD_DUAL_CORE_EXCEPTIONS:
+        if model in cpu_norm:
+            return "NO"
+
+    # =========================
     # XEON
     # =========================
     if "xeon" in cpu_norm:
@@ -130,25 +143,6 @@ def evaluate_cpu(cpu_name: str) -> str:
         return "NO"
 
     # =========================
-    # INTEL CORE (GENERACJA)
-    # =========================
-    gen = extract_intel_generation(cpu_norm)
-
-    # ---- stare generacje Intela
-    if gen is not None and gen < 6:
-        return "NO"
-
-    # ---- wyjątki TYLKO dla starych CPU
-    if gen is not None and gen < 10:
-        for model in INTEL_HARD_REJECT:
-            if model in cpu_norm:
-                return "NO"
-
-        for model in INTEL_DUAL_CORE_EXCEPTIONS:
-            if model in cpu_norm:
-                return "WEAK"
-
-    # =========================
     # INTEL SPECIAL OK
     # =========================
     for model in INTEL_SPECIAL_OK:
@@ -167,24 +161,31 @@ def evaluate_cpu(cpu_name: str) -> str:
         return "OK" if tier == 3 else "VERY_GOOD"
 
     # =========================
-    # INTEL CORE – OCENA KOŃCOWA
+    # INTEL CORE – OCENA GENERACYJNA
     # =========================
     if any(x in cpu_norm for x in ("i3-", "i5-", "i7-", "i9-")):
+        gen = extract_intel_generation(cpu_norm)
         if gen is None:
             return "UNKNOWN"
+
+        # stare generacje
+        if gen < 6:
+            return "NO"
 
         if "i3-" in cpu_norm:
             return "OK" if gen >= 10 else "NO"
 
         if "i5-" in cpu_norm:
             if gen in (6, 7):
-                return "WEAK"
+                return "NO"
             if gen in (8, 9):
                 return "OK"
             return "VERY_GOOD"
 
         if "i7-" in cpu_norm:
-            return "OK" if gen in (6, 7) else "VERY_GOOD"
+            if gen in (6, 7):
+                return "NO"
+            return "VERY_GOOD"
 
         if "i9-" in cpu_norm:
             return "VERY_GOOD"
@@ -220,7 +221,7 @@ def evaluate_hardware(user_input: str) -> str:
         return "❌ Procesor stanowczo zbyt słaby na Roblox Studio."
 
     if cpu_result == "WEAK":
-        return "⚠️ Sprzęt jest zbyt słaby na roblox Studio."
+        return "⚠️ Sprzęt jest zbyt słaby na Roblox Studio."
 
     if cpu_result == "OK":
         return "✅ Roblox Studio będzie działał poprawnie."
