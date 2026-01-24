@@ -74,6 +74,14 @@ def extract_intel_generation(cpu_norm: str):
     # 6–9 generacja
     return int(model[0])
 
+def extract_intel_model(cpu_norm: str):
+    """
+    Zwraca dokładny model Intela, np:
+    i5-1145g7, i3-1215u
+    """
+    match = re.search(r"i[3579]-\d{4,5}[a-z]*", cpu_norm)
+    return match.group(0) if match else None
+
 # ==================================================
 # GOOGLE SHEETS LOGGER
 # ==================================================
@@ -102,14 +110,14 @@ def evaluate_cpu(cpu_name: str) -> str:
     cpu_norm = normalize(cpu_name)
 
     # =========================
-    # BEZWZGLĘDNE ODRZUCENIA – PRIORYTET
+    # DOKŁADNY MODEL INTELA (KLUCZOWE)
     # =========================
-    for model in INTEL_HARD_REJECT:
-        if model in cpu_norm:
-            return "NO"
+    intel_model = extract_intel_model(cpu_norm)
 
-    for model in INTEL_DUAL_CORE_EXCEPTIONS:
-        if model in cpu_norm:
+    if intel_model:
+        if intel_model in INTEL_HARD_REJECT:
+            return "NO"
+        if intel_model in INTEL_DUAL_CORE_EXCEPTIONS:
             return "NO"
 
     for model in AMD_DUAL_CORE_EXCEPTIONS:
@@ -163,31 +171,30 @@ def evaluate_cpu(cpu_name: str) -> str:
     # =========================
     # INTEL CORE – OCENA GENERACYJNA
     # =========================
-    if any(x in cpu_norm for x in ("i3-", "i5-", "i7-", "i9-")):
+    if intel_model:
         gen = extract_intel_generation(cpu_norm)
         if gen is None:
             return "UNKNOWN"
 
-        # stare generacje
         if gen < 6:
             return "NO"
 
-        if "i3-" in cpu_norm:
+        if intel_model.startswith("i3-"):
             return "OK" if gen >= 10 else "NO"
 
-        if "i5-" in cpu_norm:
+        if intel_model.startswith("i5-"):
             if gen in (6, 7):
                 return "NO"
             if gen in (8, 9):
                 return "OK"
             return "VERY_GOOD"
 
-        if "i7-" in cpu_norm:
+        if intel_model.startswith("i7-"):
             if gen in (6, 7):
                 return "NO"
             return "VERY_GOOD"
 
-        if "i9-" in cpu_norm:
+        if intel_model.startswith("i9-"):
             return "VERY_GOOD"
 
     # =========================
@@ -230,4 +237,4 @@ def evaluate_hardware(user_input: str) -> str:
         return "🚀 Roblox Studio będzie działał bardzo płynnie."
 
     log_unknown_cpu(cpu_part, ram_gb)
-    return "❓ Procesor nieznany – zapisano do analizy. Zapytaj o ten konkretny przypadek na czacie - URGENT."
+    return "❓ Procesor nieznany – zapisano do analizy."
