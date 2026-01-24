@@ -4,7 +4,7 @@ import requests
 from datetime import datetime
 
 # ==================================================
-# INTEL – TWARDO ODRZUCANE (ZBYT SŁABE)
+# INTEL – TWARDO ODRZUCANE (STARE, SŁABE)
 # ==================================================
 
 INTEL_HARD_REJECT = {
@@ -17,7 +17,7 @@ INTEL_HARD_REJECT = {
 }
 
 # ==================================================
-# INTEL / AMD – DUAL CORE (WARUNKOWO)
+# INTEL / AMD – DUAL CORE (STARE / WARUNKOWE)
 # ==================================================
 
 INTEL_DUAL_CORE_EXCEPTIONS = {
@@ -95,67 +95,81 @@ def evaluate_cpu(cpu_name: str) -> str:
     cpu_raw = cpu_name.lower()
     cpu_norm = normalize(cpu_name)
 
-    # ---------- XEON ----------
+    # =========================
+    # XEON
+    # =========================
     if "xeon" in cpu_norm:
         return "UNKNOWN"
 
-    # ---------- APPLE SILICON ----------
+    # =========================
+    # APPLE SILICON
+    # =========================
     if re.search(r"\bm[123]\b", cpu_raw) or "applem" in cpu_norm:
         return "VERY_GOOD"
 
-    # ---------- INTEL CORE ULTRA ----------
+    # =========================
+    # INTEL CORE ULTRA
+    # =========================
     if "coreultra" in cpu_norm:
         return "VERY_GOOD"
 
-    # ---------- SNAPDRAGON ----------
+    # =========================
+    # SNAPDRAGON
+    # =========================
     if "snapdragonxelite" in cpu_norm or "snapdragonxplus" in cpu_norm:
         return "VERY_GOOD"
     if "snapdragon" in cpu_norm:
         return "NO"
 
-    # ---------- CELERON / ATOM ----------
+    # =========================
+    # CELERON / ATOM
+    # =========================
     if "celeron" in cpu_norm or "atom" in cpu_norm:
         return "NO"
 
-    # ---------- HARD REJECT ----------
-    for model in INTEL_HARD_REJECT:
-        if model in cpu_norm:
-            return "NO"
+    # =========================
+    # INTEL CORE (GENERACJA)
+    # =========================
+    gen = extract_intel_generation(cpu_norm)
 
-    # ---------- DUAL CORE ----------
-    for model in INTEL_DUAL_CORE_EXCEPTIONS:
-        if model in cpu_norm:
-            return "WEAK"
+    # ---- stare generacje Intela
+    if gen is not None and gen < 6:
+        return "NO"
 
-    for model in AMD_DUAL_CORE_EXCEPTIONS:
-        if model in cpu_norm:
-            return "WEAK"
+    # ---- wyjątki TYLKO dla starych CPU
+    if gen is not None and gen < 10:
+        for model in INTEL_HARD_REJECT:
+            if model in cpu_norm:
+                return "NO"
 
-    # ---------- INTEL SPECIAL OK ----------
+        for model in INTEL_DUAL_CORE_EXCEPTIONS:
+            if model in cpu_norm:
+                return "WEAK"
+
+    # =========================
+    # INTEL SPECIAL OK
+    # =========================
     for model in INTEL_SPECIAL_OK:
         if model in cpu_norm:
             return "VERY_GOOD"
 
-    # ---------- AMD RYZEN ----------
+    # =========================
+    # AMD RYZEN
+    # =========================
     if "ryzen" in cpu_norm:
         match = re.search(r"ryzen([3579])(\d{4})", cpu_norm)
         if not match:
             return "UNKNOWN"
 
         tier = int(match.group(1))
-        if tier == 3:
-            return "OK"
-        return "VERY_GOOD"
+        return "OK" if tier == 3 else "VERY_GOOD"
 
-    # ---------- INTEL CORE ----------
+    # =========================
+    # INTEL CORE – OCENA KOŃCOWA
+    # =========================
     if any(x in cpu_norm for x in ("i3-", "i5-", "i7-", "i9-")):
-        gen = extract_intel_generation(cpu_norm)
         if gen is None:
             return "UNKNOWN"
-
-        # zbyt stare generacje
-        if gen < 6:
-            return "NO"
 
         if "i3-" in cpu_norm:
             return "OK" if gen >= 10 else "NO"
@@ -207,4 +221,4 @@ def evaluate_hardware(user_input: str) -> str:
         return "🚀 Roblox Studio będzie działał bardzo płynnie."
 
     log_unknown_cpu(cpu_part, ram_gb)
-    return "❓ Procesor nieznany – zapisano do analizy. Zapytaj o ten konkretny przypadek na czacie - URGENT"
+    return "❓ Procesor nieznany – zapisano do analizy. Zapytaj o ten konkretny przypadek na czacie - URGENT."
