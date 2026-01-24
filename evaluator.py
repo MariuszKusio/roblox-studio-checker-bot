@@ -198,7 +198,7 @@ def evaluate_hardware(user_input: str) -> str:
         return "❌ Procesor stanowczo zbyt słaby na Roblox Studio."
 
     if cpu_result == "WEAK":
-        return "⚠️ Roblox Studio uruchomi się, ale mogą wystąpić spadki wydajności."
+        return "⚠️ Sprzęt jest zbyt słaby na roblox Studio."
 
     if cpu_result == "OK":
         return "✅ Roblox Studio będzie działał poprawnie."
