@@ -99,6 +99,13 @@ def evaluate_cpu(cpu_name: str) -> str:
     if "xeon" in cpu_raw:
         return "UNKNOWN"
 
+    # =========================
+    # APPLE SILICON (M1 / M2 / M3)
+    # =========================
+    if re.search(r"\bm[123]\b", cpu_raw) or "apple m" in cpu_raw:
+        return "VERY_GOOD"
+
+
     # ---------- INTEL CORE ULTRA ----------
     if "core ultra" in cpu_raw:
         return "VERY_GOOD"
