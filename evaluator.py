@@ -207,4 +207,4 @@ def evaluate_hardware(user_input: str) -> str:
         return "🚀 Roblox Studio będzie działał bardzo płynnie."
 
     log_unknown_cpu(cpu_part, ram_gb)
-    return "❓ Procesor nieznany – zapisano do analizy."
+    return "❓ Procesor nieznany – zapisano do analizy. Zapytaj o ten konkretny przypadek na czacie - URGENT"
