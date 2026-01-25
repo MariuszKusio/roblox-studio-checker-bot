@@ -4,7 +4,7 @@ import requests
 from datetime import datetime
 
 # ==================================================
-# INTEL – TWARDO ODRZUCANE
+# INTEL – TWARDO ODRZUCANE (STARE, SŁABE)
 # ==================================================
 
 INTEL_HARD_REJECT = {
@@ -16,6 +16,10 @@ INTEL_HARD_REJECT = {
     "i5-4200u",
 }
 
+# ==================================================
+# INTEL – STARE DUAL CORE (ZBYT SŁABE)
+# ==================================================
+
 INTEL_DUAL_CORE_EXCEPTIONS = {
     "i5-6200u", "i5-6300u", "i5-6267u", "i5-6287u",
     "i5-7200u", "i5-7267u", "i5-7287u", "i5-7300u", "i5-7360u",
@@ -25,12 +29,9 @@ INTEL_DUAL_CORE_EXCEPTIONS = {
     "i7-8500y", "i7-8600y",
 }
 
-AMD_DUAL_CORE_EXCEPTIONS = {
-    "ryzen32200u",
-    "ryzen32300u",
-    "ryzenr1505g",
-    "ryzenr1606g",
-}
+# ==================================================
+# SPECJALNE MODELE OK
+# ==================================================
 
 INTEL_SPECIAL_OK = {
     "pentiumgold8505",
@@ -49,24 +50,29 @@ def normalize(text: str) -> str:
     return text.lower().replace(" ", "")
 
 def cpu_clean(text: str) -> str:
-    """ lower + bez spacji, ALE Z MYŚLNIKIEM """
     return text.lower().replace(" ", "")
 
 def extract_ram_gb(text: str):
     m = re.search(r"(\d+)\s*gb", text.lower())
     return int(m.group(1)) if m else None
 
-def extract_intel_model(cpu_cleaned: str):
-    m = re.search(r"i[3579]-\d{4,5}[a-z]*", cpu_cleaned)
+def extract_intel_model(cpu: str):
+    m = re.search(r"i[3579]-\d{4,5}[a-z]*", cpu)
     return m.group(0) if m else None
 
-def extract_intel_generation(cpu_cleaned: str):
-    m = re.search(r"i[3579]-(\d{4,5})", cpu_cleaned)
+def extract_intel_generation(cpu: str):
+    m = re.search(r"i[3579]-(\d{4,5})", cpu)
     if not m:
         return None
 
     model = m.group(1)
-    return int(model[:2]) if len(model) == 5 else int(model[0])
+
+    # 10–14 generacja
+    if model.startswith(("10", "11", "12", "13", "14")):
+        return int(model[:2])
+
+    # 6–9 generacja
+    return int(model[0])
 
 # ==================================================
 # GOOGLE SHEETS LOGGER
@@ -94,52 +100,48 @@ def log_unknown_cpu(cpu: str, ram: int):
 # ==================================================
 
 def evaluate_cpu(cpu_name: str) -> str:
-    cpu_raw = cpu_name.lower()
-    cpu_norm = normalize(cpu_name)
-    cpu_c = cpu_clean(cpu_name)
+    raw = cpu_name.lower()
+    norm = normalize(cpu_name)
+    clean = cpu_clean(cpu_name)
 
-    intel_model = extract_intel_model(cpu_c)
+    intel_model = extract_intel_model(clean)
 
-    # ---- twarde blacklisty
+    # ---------- blacklist ----------
     if intel_model:
         if intel_model in INTEL_HARD_REJECT:
             return "NO"
         if intel_model in INTEL_DUAL_CORE_EXCEPTIONS:
             return "NO"
 
-    for amd in AMD_DUAL_CORE_EXCEPTIONS:
-        if amd in cpu_norm:
-            return "NO"
-
-    # ---- Apple Silicon
-    if re.search(r"\bm[123]\b", cpu_raw) or "applem" in cpu_norm:
+    # ---------- Apple Silicon ----------
+    if re.search(r"\bm[123]\b", raw) or "applem" in norm:
         return "VERY_GOOD"
 
-    # ---- Intel Core Ultra
-    if "coreultra" in cpu_norm:
+    # ---------- Intel Core Ultra ----------
+    if "coreultra" in norm:
         return "VERY_GOOD"
 
-    # ---- Snapdragon
-    if "snapdragonxelite" in cpu_norm or "snapdragonxplus" in cpu_norm:
+    # ---------- Snapdragon ----------
+    if "snapdragonxelite" in norm or "snapdragonxplus" in norm:
         return "VERY_GOOD"
-    if "snapdragon" in cpu_norm:
+    if "snapdragon" in norm:
         return "NO"
 
-    # ---- Intel special OK
-    for model in INTEL_SPECIAL_OK:
-        if model in cpu_norm:
+    # ---------- Intel special ----------
+    for m in INTEL_SPECIAL_OK:
+        if m in norm:
             return "VERY_GOOD"
 
-    # ---- AMD Ryzen
-    if "ryzen" in cpu_norm:
-        m = re.search(r"ryzen([3579])(\d{4})", cpu_norm)
+    # ---------- AMD Ryzen ----------
+    if "ryzen" in norm:
+        m = re.search(r"ryzen([3579])(\d{4})", norm)
         if not m:
             return "UNKNOWN"
         return "OK" if int(m.group(1)) == 3 else "VERY_GOOD"
 
-    # ---- Intel Core generacyjnie
+    # ---------- Intel Core ----------
     if intel_model:
-        gen = extract_intel_generation(cpu_c)
+        gen = extract_intel_generation(clean)
         if gen is None or gen < 6:
             return "NO"
 
@@ -159,7 +161,7 @@ def evaluate_cpu(cpu_name: str) -> str:
         if intel_model.startswith("i9-"):
             return "VERY_GOOD"
 
-    if "celeron" in cpu_norm or "atom" in cpu_norm:
+    if "celeron" in norm or "atom" in norm:
         return "NO"
 
     return "UNKNOWN"
@@ -172,15 +174,15 @@ def evaluate_hardware(user_input: str) -> str:
     if "," not in user_input:
         return "❌ Podaj dane w formacie: `CPU, 8GB RAM`"
 
-    cpu_part, ram_part = [x.strip() for x in user_input.split(",", 1)]
-    ram = extract_ram_gb(ram_part)
+    cpu, ram_txt = [x.strip() for x in user_input.split(",", 1)]
+    ram = extract_ram_gb(ram_txt)
 
     if ram is None:
         return "❌ Nie wykryto ilości RAM (np. 8GB)."
     if ram < 8:
         return "❌ Za mało RAM (minimum 8 GB)."
 
-    result = evaluate_cpu(cpu_part)
+    result = evaluate_cpu(cpu)
 
     if result == "NO":
         return "❌ Procesor zbyt słaby na Roblox Studio."
@@ -189,6 +191,5 @@ def evaluate_hardware(user_input: str) -> str:
     if result == "VERY_GOOD":
         return "🚀 Roblox Studio będzie działał bardzo płynnie."
 
-    log_unknown_cpu(cpu_part, ram)
-    return "❓ Procesor nieznany – zapisano do analizy. Zapytaj o ten konkretny przypadek na czacie - URGENT."
-
+    log_unknown_cpu(cpu, ram)
+    return "❓ Procesor nieznany – zapisano do analizy. Zapytaj o ten konkretny przypadek na czacie - URGENT. "
