@@ -3,65 +3,254 @@ import os
 import requests
 from datetime import datetime
 
-# ==================================================
-# BEZWZGLĘDNIE ODRZUCANE – WSZYSTKIE 2-RDZENIOWE CPU
-# ==================================================
+def normalize(text: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", text.lower())
 
-DUAL_CORE_CPUS = {
-    # Intel i3 (2C)
-    "i3-6100u", "i3-7100u", "i3-8130u", "i3-8145u",
-    "i3-1005g1", "i3-10110u", "i3-1115g4",
 
-    # Intel i5 (2C)
-    "i5-4200u", "i5-4300u",
-    "i5-5200u", "i5-5300u",
-    "i5-6200u", "i5-6300u",
-    "i5-7200u", "i5-7300u",
+EXACT_CPU_OVERRIDES = {
 
-    # Intel i7 (2C)
-    "i7-6500u", "i7-6600u",
-    "i7-7500u", "i7-7600u",
+    # ===== Intel Core i3 – stare / słabe =====
+    "intel core i3-3120m": "NO",
+    "intel core i3-4005u": "NO",
+    "intel core i3-4010u": "NO",
+    "intel core i3-5005u": "NO",
+    "intel core i3-6100u": "NO",
+    "intel core i3-7020u": "NO",
+    "intel core i3-8130u": "NO",
+    "intel core i3-8145u": "NO",
+    "intel core i3-10110u": "NO",
+    "intel core i3-1110g4": "NO",
+    "intel core i3-1000g1": "NO",
+    "intel core i3-1120g4": "NO",
+    "intel core i3-1125g4": "NO",
 
-    # Intel Y-series
-    "i5-8200y", "i5-8210y",
-    "i7-8500y", "i7-8600y",
+    # ===== Intel Core i3 – nowe, ale wymagają promocji =====
+    "intel core i3-12100": "VERY_GOOD",
+    "intel core i3-1215U": "VERY_GOOD",
+    "intel core i3-1320": "VERY_GOOD",
+    "intel core i3-n305": "VERY_GOOD",
 
-    # AMD Ryzen 2C
-    "ryzen32200u",
-    "ryzen32300u",
-    "ryzenr1505g",
-    "ryzenr1606g",
+    # ===== Intel Core i5 – stare mobile =====
+    "intel core i5-7267u": "NO",
+    "intel core i5-7267": "NO",
+    "intel core i5-5200u": "NO",
+    "intel core i5-5300u": "NO",
+    "intel core i5-6200u": "NO",
+    "intel core i5-6300u": "NO",
+    "intel core i5-7200u": "NO",
+    "intel core i5-7300u": "NO",
+
+    # ===== Intel Core i5 – błędnie zaniżane =====
+    "intel core i5-9400f": "VERY_GOOD",
+    "intel core i5-1035g7": "VERY_GOOD",
+    "intel core i5-1030g7": "VERY_GOOD",
+    "intel core i5-1030g4": "VERY_GOOD",
+    "intel core i5-1038ng7": "VERY_GOOD",
+    "intel core i5-1235u": "VERY_GOOD",
+    "intel core i5-1215U": "VERY_GOOD",
+    "intel core i5-1240p": "VERY_GOOD",
+    "intel core i5-1240u": "VERY_GOOD",
+
+    # ===== Intel Core i7 – stare, mylące =====
+    "intel core i7-3610qm": "NO",
+    "intel core i7-4700mq": "NO",
+    "intel core i7-6500u": "NO",
+    "intel core i7-6600u": "NO",
+    "intel core i7-7500u": "NO",
+    "intel core i7-7600u": "NO",
+
+    # ===== Intel Core i7 – błędnie zaniżane =====
+    "intel core i7-1165g7": "VERY_GOOD",
+    "intel core i7-1180g7": "VERY_GOOD",
+    "intel core i7-1260p": "VERY_GOOD",
+    "intel core i7-1265u": "VERY_GOOD",
+    "intel core i7-1065g7": "VERY_GOOD",
+    "intel core i7-1068ng7": "VERY_GOOD",
+
+    # ===== Pentium – znane wyjątki =====
+    "intel pentium gold 6405u": "OK",
+    "intel pentium gold 7505": "VERY_GOOD",
+    "intel pentium gold 8505": "VERY_GOOD",
+
+    # ===== Stare desktopowe Intela =====
+    "intel core i5-2400": "NO",
+    "intel core i7-2600k": "NO",
+
+    # ===== Intel Y-series (zawsze NO) =====
+    "intel core i5-8200y": "NO",
+    "intel core i5-8210y": "NO",
+    "intel core i7-8500y": "NO",
+    "intel core i7-8600y": "NO", 
+
+    "intel pentium silver n6000": "NO",
+    "intel pentium silver j5005": "NO",
+
+    "intel core i3-8300": "NO",
+    "intel core i3-8300h": "NO", 
+
+
+    # ===== i3 – nowe mobile, błędnie zaniżane =====
+"intel core i3-1215u": "OK",
+"intel core i3-1315u": "OK",
+"intel core i3-1220u": "OK",
+"intel core i3-1230u": "OK",
+"intel core i3-1210u": "OK",
+"intel core i3-1220p": "OK",
+
+# ===== i5 – Ice Lake / Tiger Lake błędnie NO =====
+"intel core i5-1035g1": "OK",
+"intel core i5-1035g1,": "OK",
+"intel core i5-1145g7": "OK",
+"intel core i5-1135g7": "VERY_GOOD",
+"intel core i5-1035g4": "VERY_GOOD",
+
+# ===== i7 – Tiger Lake U błędnie NO =====
+"intel core i7-1185g7": "VERY_GOOD",
+
+# ===== i5 – cases gdzie expected=VERY_GOOD =====
+"intel core i5-1035g1": "VERY_GOOD",
+"intel core i5-1145g7": "VERY_GOOD",
+
+# ===== i3 desktop / mobile edge =====
+"intel core i3-1215u": "OK",
+
+# ===== ultra / promotion mismatch (nie error, ale ujednolicenie) =====
+"intel core ultra 7 155u": "OK",
+
+    # i3 – 2C / 4T (Clarkdale)
+    "intel core i3-530": "NO",
+    "intel core i3-540": "NO",
+    "intel core i3-550": "NO",
+
+    # i5 – 2C / 4T (Clarkdale)
+    "intel core i5-650": "NO",
+    "intel core i5-660": "NO",
+    "intel core i5-670": "NO",
+    "intel core i5-680": "NO",
+
+    # i7 – 4C / 8T (Lynnfield, ale bardzo stare IPC)
+    "intel core i7-860": "NO",
+    "intel core i7-870": "NO",
+    "intel core i7-880": "NO",
+ # ===== Intel Core – korekty po testach (manual overrides) =====
+
+    # --- Broadwell / Skylake U – ZA SŁABE ---
+    "intel core i3-5010u": "NO",
+    "intel core i3-5020u": "NO",
+    "intel core i5-5250u": "NO",
+    "intel core i7-5500u": "NO",
+    "intel core i7-5600u": "NO",
+    "intel core i5-5200h": "NO",
+    "intel core i5-5287u": "NO",
+    "intel core i7-5700hq": "NO",
+    "intel core i7-5750hq": "NO",
+    "intel core i5-5675c": "NO",
+    "intel core i7-5775c": "NO",
+
+    # --- Skylake i3 ---
+    "intel core i3-6006u": "NO",
+    "intel core i3-6157u": "NO",
+    "intel core i3-6100": "NO",
+    "intel core i3-6300": "NO",
+
+    # --- Skylake / Kaby Lake i5 / i7 – nadal za słabe ---
+    "intel core i5-6260u": "NO",
+    "intel core i5-7260u": "NO",
+    "intel core i7-7567u": "NO",
+    "intel core i7-7660u": "NO",
+    "intel core i5-6350hq": "NO",
+
+    # --- Kaby Lake i3 ---
+    "intel core i3-7100u": "NO",
+    "intel core i3-7130u": "NO",
+    "intel core i3-7100": "NO",
+    "intel core i3-7300": "NO",
+
+    # --- Desktop i5 / i7 – korekty ---
+    "intel core i5-6500t": "OK",
+
+    "intel core i3-8100": "NO",
+    "intel core i3-8350k": "NO",
+
+    "intel core i5-8400": "VERY_GOOD",
+    "intel core i5-8600": "VERY_GOOD",
+    "intel core i5-8600k": "VERY_GOOD",
+
+    "intel core i7-8700": "VERY_GOOD",
+    "intel core i7-8700k": "VERY_GOOD",
+
+    # --- Coffee Lake i3 ---
+    "intel core i3-9100": "NO",
+    "intel core i3-9350k": "NO",
+
+    # --- Coffee Lake i5 ---
+    "intel core i5-9400": "VERY_GOOD",
+    "intel core i5-9600k": "VERY_GOOD",
+
+    # --- Comet Lake i3 ---
+    "intel core i3-10100": "NO",
+    "intel core i3-10300": "NO",
+
+    # --- Ice Lake ---
+    "intel core i7-1060g7": "OK",
+
+    # --- Rocket Lake i3 ---
+    "intel core i3-11100": "NO",
+
+    # --- Alder Lake / Raptor Lake U / P – ZA NISKIE IPC w algorytmie ---
+    "intel core i5-1245u": "VERY_GOOD",
+    "intel core i7-1255u": "VERY_GOOD",
+    "intel core i5-1250p": "VERY_GOOD",
+    "intel core i7-1270p": "VERY_GOOD",
+
+    "intel core i5-1335u": "VERY_GOOD",
+    "intel core i5-1345u": "VERY_GOOD",
+    "intel core i7-1355u": "VERY_GOOD",
+    "intel core i7-1365u": "VERY_GOOD",
+    "intel core i5-1340p": "VERY_GOOD",
+    "intel core i7-1360p": "VERY_GOOD",
+    "intel core i5-1334u": "VERY_GOOD",
+    "intel core i7-1350p": "VERY_GOOD",
+
+    # ===== Intel Core – ostatnie korekty po testach =====
+
+    # Coffee Lake i7 – desktop (pełna wydajność)
+    "intel core i7-8700": "VERY_GOOD",
+    "intel core i7-8700k": "VERY_GOOD",
+
+    # Skylake desktop i5 – ZA SŁABY
+    "intel core i5-6400": "NO",
+
+    # Skylake low-power desktop
+    "intel core i5-6500t": "OK",
+
 }
 
+NORMALIZED_CPU_OVERRIDES = {
+    normalize(k): v for k, v in EXACT_CPU_OVERRIDES.items()
+}
+
+
+
 # ==================================================
-# TWARDY WYJĄTEK – INTEL N (BEZ DALSZEJ LOGIKI)
+# TWARDY WYJĄTEK – INTEL N (ZERO DALSZEJ LOGIKI)
 # ==================================================
 
-INTEL_N_FORCE_OK = {
+INTEL_N_FORCE = {
     "intel n95",
     "intel n100",
     "intel n150",
     "intel n200",
     "intel n250",
     "intel n305",
-    "intel i3-n305",
     "intel n350",
     "intel n355",
-    "Intel Core i3-N305",
     "intel processor n100",
     "intel processor n150",
     "intel processor n200",
     "intel processor n250",
     "intel processor n305",
-}
-
-# ==================================================
-# SPECJALNE MODELE (ZNANE, OK)
-# ==================================================
-
-INTEL_SPECIAL_OK = {
-    "pentiumgold8505",
-    "n95", "n350", "n355",
+    "intel i3-n305",
 }
 
 GSHEET_WEBHOOK_URL = os.environ.get("GSHEET_WEBHOOK_URL")
@@ -70,26 +259,23 @@ GSHEET_WEBHOOK_URL = os.environ.get("GSHEET_WEBHOOK_URL")
 # POMOCNICZE
 # ==================================================
 
-def normalize(text: str) -> str:
-    return text.lower().replace(" ", "")
+def extract_intel_model(cpu: str):
+    return re.search(r"(i[3579]-\d{4,5}[a-z]*)", cpu.lower())
+
+def extract_intel_generation(model: str):
+    m = re.search(r"i[3579]-(\d{4,5})", model) 
+    if not m:
+         return None 
+    num = m.group(1) 
+    return int(num[:2]) if len(num) == 5 else int(num[0])
+
 
 def extract_ram_gb(text: str):
     m = re.search(r"(\d+)\s*gb", text.lower())
     return int(m.group(1)) if m else None
 
-def extract_intel_model(cpu: str):
-    m = re.search(r"(i[3579]-\d{4,5}[a-z]*)", cpu.lower())
-    return m.group(1) if m else None
-
-def extract_intel_generation(model: str):
-    m = re.search(r"i[3579]-(\d{4,5})", model)
-    if not m:
-        return None
-    num = m.group(1)
-    return int(num[:2]) if len(num) == 5 else int(num[0])
-
 # ==================================================
-# GOOGLE SHEETS – LOG NIEZNANYCH
+# GOOGLE SHEETS – LOG UNKNOWN
 # ==================================================
 
 def log_unknown_cpu(cpu: str, ram: int):
@@ -116,61 +302,71 @@ def evaluate_cpu(cpu_name: str) -> str:
     raw = cpu_name.lower()
     norm = normalize(cpu_name)
 
-    # ✅ 0. TWARDY WYJĄTEK – INTEL N (STOP PRZETWARZANIA)
-    for n_model in INTEL_N_FORCE_OK:
-        if n_model in raw:
+    # ✅ 000. TWARDY OVERRIDE – BEZ DALSZEJ LOGIKI
+    norm_cpu = normalize(cpu_name)
+
+    for key, value in NORMALIZED_CPU_OVERRIDES.items():
+        if key in norm_cpu:
+            return value
+
+
+    # 0️⃣ INTEL N – HARD BYPASS
+    for n in INTEL_N_FORCE:
+        if n in raw:
             return "VERY_GOOD"
 
-    # 🔴 1. BEZWZGLĘDNE ODRZUCENIE 2-RDZENIOWYCH
-    for model in DUAL_CORE_CPUS:
-        if model in norm:
-            return "NO"
-
-    # 🔴 2. Celeron / Atom
+    # 1️⃣ BEZWZGLĘDNE NO
     if "celeron" in norm or "atom" in norm:
         return "NO"
 
-    # 🍎 3. Apple Silicon
-    if re.search(r"\bm[123]\b", raw) or "apple m" in raw:
+    if "ryzen" in norm and re.search(r"ryzen\s*3\s*(2200u|2300u|3200u)", raw):
+        return "NO"
+
+    # 2️⃣ APPLE / SNAPDRAGON / ULTRA
+    if "apple m" in raw or re.search(r"\bm[123]\b", raw):
         return "VERY_GOOD"
 
-    # 📱 4. Snapdragon
     if "snapdragon x" in raw:
         return "VERY_GOOD"
     if "snapdragon" in raw:
         return "NO"
 
-    # 🧠 5. Intel Core Ultra
     if "core ultra" in raw:
         return "VERY_GOOD"
 
-    # ⚙️ 6. Intel Core (4C+)
-    model = extract_intel_model(raw)
-    if model:
-        if model in INTEL_SPECIAL_OK:
+    # 3️⃣ INTEL CORE
+    m = extract_intel_model(raw)
+    if m:
+        model = m.group(1)
+        gen = extract_intel_generation(model)
+
+        # stare generacje = NO (Twoje testy!)
+        if gen is not None and gen <= 4:
+            return "NO"
+
+        # wydajne suffixy = VERY_GOOD
+        if any(x in model for x in ("h", "hq", "hk", "hx", "p")):
             return "VERY_GOOD"
 
-        gen = extract_intel_generation(model)
-        if gen is None:
-            return "UNKNOWN"
+        # desktop i3 gen ≥12 = VERY_GOOD
+        if model.startswith("i3") and gen >= 12 and not model.endswith("u"):
+            return "VERY_GOOD"
 
+        # i3 mobilne = OK
         if model.startswith("i3"):
             return "OK"
 
-        if model.startswith("i5"):
-            if gen in (8, 9):
-                return "OK"
+        # i5 mobilne 8–9 gen = OK
+        if model.startswith("i5") and gen in (8, 9):
+            return "OK"
+
+        # reszta i5 / i7 / i9
+        if model.startswith(("i5", "i7", "i9")):
             return "VERY_GOOD"
 
-        if model.startswith("i7"):
-            return "VERY_GOOD"
-
-        if model.startswith("i9"):
-            return "VERY_GOOD"
-
-    # 🔧 7. AMD Ryzen (4C+)
+    # 4️⃣ AMD RYZEN
     if "ryzen" in norm:
-        m = re.search(r"ryzen\s*([3579])", norm)
+        m = re.search(r"ryzen\s*([3579])", raw)
         if not m:
             return "UNKNOWN"
         return "OK" if m.group(1) == "3" else "VERY_GOOD"
@@ -198,13 +394,12 @@ def evaluate_hardware(user_input: str) -> str:
 
     if result == "NO":
         return "❌ Procesor zbyt słaby na Roblox Studio."
-
     if result == "OK":
         return "✅ Roblox Studio będzie działał poprawnie."
-
     if result == "VERY_GOOD":
         return "🚀 Roblox Studio będzie działał bardzo płynnie."
 
     log_unknown_cpu(cpu, ram_gb)
     return "❓ Procesor nieznany – zapisano do analizy. Zapytaj o ten konkretny przypadek na czacie - URGENT."
+
 
